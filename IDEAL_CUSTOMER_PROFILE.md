@@ -1,0 +1,5 @@
+Your first customer should be clinics with roughly 1–5 doctors, recurring appointments, receptionist/admin workload, and predictable booking logic. They usually deal with repeated questions like consultation hours, fees, follow-ups, rescheduling, and document requirements. They are small enough to feel operational pain quickly, but structured enough that your software can deliver obvious value fast. Start with clinics only. Do not start with salons and gyms at the same time.
+
+Target: Independent Specialized Medical Clinics (e.g., Physiotherapy, Dermatology, or Holistic Wellness).
+
+Why: These businesses have complex "rules" (e.g., "New patients need a 15-min intake first," "Insurance vs. Cash pay logic," "Specific doctor availability"). A generic booking link fails here, but an Agent thrives.

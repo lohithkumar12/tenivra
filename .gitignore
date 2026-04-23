@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+venv/
+.env
+
+# SQLite (local dev only)
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+
+# Node
+node_modules/
+.next/
+out/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env files with secrets
+backend/.env
+frontend/.env.local
+
+# Cursor
+.cursor/
