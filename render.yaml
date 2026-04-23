@@ -22,6 +22,6 @@ services:
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: 480
       - key: CORS_ORIGINS
-        value: https://frontend-vemuboddupalli-7387s-projects.vercel.app
+        value: https://frontend-mu-three-62.vercel.app,https://frontend-vemuboddupalli-7387s-projects.vercel.app
       - key: PYTHON_VERSION
         value: 3.12.8
