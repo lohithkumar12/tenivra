@@ -43,48 +43,76 @@ export default function ServicesPage() {
   if (loading) return <Spinner />;
 
   return (
-    <div>
+    <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Services</h1>
-        <Button onClick={() => { setForm(BLANK); setOpen(true); }}>Add service</Button>
+        <div>
+          <h1 className="text-2xl font-bold">Services</h1>
+          <p className="text-sm text-slate-500 mt-1">{list.length} service{list.length !== 1 ? "s" : ""} listed</p>
+        </div>
+        <Button variant="gradient" onClick={() => { setForm(BLANK); setOpen(true); }}>Add Service</Button>
       </div>
 
       {list.length === 0 ? <EmptyState message="No services added yet." /> : (
-        <div className="grid gap-4">
-          {list.map(s => (
-            <Card key={s.id} className="p-4 flex items-start justify-between">
-              <div>
-                <h3 className="font-semibold">{s.name}</h3>
-                {s.description && <p className="text-sm text-slate-500">{s.description}</p>}
-                <p className="text-sm text-slate-500">Rs.{s.fee} · {s.duration_minutes} min · {s.appointment_required ? "Appointment required" : "Walk-in OK"}</p>
-              </div>
-              <div className="flex gap-2 shrink-0">
-                <Button variant="ghost" size="sm" onClick={() => { setForm(s); setOpen(true); }}>Edit</Button>
-                <Button variant="danger" size="sm" onClick={() => del(s.id!)}>Delete</Button>
-              </div>
-            </Card>
-          ))}
-        </div>
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-wider text-slate-400 bg-slate-50">
+                  <th className="px-6 py-3 font-semibold">Service</th>
+                  <th className="px-6 py-3 font-semibold">Duration</th>
+                  <th className="px-6 py-3 font-semibold">Fee</th>
+                  <th className="px-6 py-3 font-semibold">Type</th>
+                  <th className="px-6 py-3 font-semibold text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {list.map(s => (
+                  <tr key={s.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="px-6 py-4">
+                      <p className="font-semibold">{s.name}</p>
+                      {s.description && <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{s.description}</p>}
+                    </td>
+                    <td className="px-6 py-4 text-slate-500">{s.duration_minutes} min</td>
+                    <td className="px-6 py-4">
+                      <span className="px-2.5 py-1 bg-brand-50 text-brand-700 rounded-full text-xs font-bold">Rs. {s.fee}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${s.appointment_required ? "bg-amber-50 text-amber-700" : "bg-green-50 text-green-700"}`}>
+                        {s.appointment_required ? "Appointment" : "Walk-in"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex gap-2 justify-end">
+                        <Button variant="ghost" size="sm" onClick={() => { setForm(s); setOpen(true); }}>Edit</Button>
+                        <Button variant="danger" size="sm" onClick={() => del(s.id!)}>Delete</Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       )}
 
-      <Modal open={open} onClose={() => setOpen(false)} title={form.id ? "Edit service" : "Add service"}>
-        <div className="space-y-3">
+      <Modal open={open} onClose={() => setOpen(false)} title={form.id ? "Edit Service" : "Add Service"}>
+        <div className="space-y-4">
           <Input label="Name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
           <Textarea label="Description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             <Input label="Duration (min)" type="number" value={form.duration_minutes} onChange={e => setForm({ ...form, duration_minutes: +e.target.value })} />
             <Input label="Fee (Rs.)" type="number" value={form.fee} onChange={e => setForm({ ...form, fee: +e.target.value })} />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <label className="block text-sm font-medium text-slate-700">Assigned Doctor</label>
-            <select className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white"
+            <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none shadow-sm"
               value={form.doctor_id || ""} onChange={e => setForm({ ...form, doctor_id: e.target.value || null })}>
               <option value="">None (any doctor)</option>
               {docs.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
           </div>
           <Toggle checked={form.appointment_required} onChange={v => setForm({ ...form, appointment_required: v })} label="Appointment required" />
-          <Button onClick={save} disabled={busy} className="w-full">{busy ? "Saving…" : "Save"}</Button>
+          <Button variant="gradient" onClick={save} disabled={busy} className="w-full">{busy ? "Saving..." : "Save"}</Button>
         </div>
       </Modal>
     </div>

@@ -41,31 +41,35 @@ export default function TimingsPage() {
   if (loading) return <Spinner />;
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Clinic Timings</h1>
+    <div className="animate-fade-in">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Clinic Timings</h1>
+        <p className="text-sm text-slate-500 mt-1">Configure your weekly opening hours and break times</p>
+      </div>
       <Card className="p-6 max-w-4xl">
         <div className="space-y-4">
           {rows.map((t, i) => (
-            <div key={i} className="flex items-center gap-3 flex-wrap">
-              <span className="w-24 text-sm font-medium">{DAY_NAMES[i]}</span>
+            <div key={i} className={`flex items-center gap-4 flex-wrap p-3 rounded-xl transition-colors ${t.is_open ? "bg-green-50/50" : "bg-slate-50"}`}>
+              <span className="w-24 text-sm font-semibold text-slate-700">{DAY_NAMES[i]}</span>
               <Toggle checked={t.is_open} onChange={v => upd(i, { is_open: v })} />
               {t.is_open && (
                 <>
                   <Input type="time" value={t.open_time ?? ""} onChange={e => upd(i, { open_time: e.target.value })} className="!w-28" />
-                  <span className="text-xs text-slate-400">to</span>
+                  <span className="text-xs text-slate-400 font-medium">to</span>
                   <Input type="time" value={t.close_time ?? ""} onChange={e => upd(i, { close_time: e.target.value })} className="!w-28" />
-                  <span className="text-xs text-slate-400 ml-1">break</span>
+                  <span className="text-xs text-slate-400 font-medium ml-2">break</span>
                   <Input type="time" value={t.break_start ?? ""} onChange={e => upd(i, { break_start: e.target.value })} className="!w-28" />
-                  <span className="text-xs text-slate-400">–</span>
+                  <span className="text-xs text-slate-400">-</span>
                   <Input type="time" value={t.break_end ?? ""} onChange={e => upd(i, { break_end: e.target.value })} className="!w-28" />
                 </>
               )}
+              {!t.is_open && <span className="text-xs text-slate-400 font-medium">Closed</span>}
             </div>
           ))}
         </div>
         <div className="mt-6 flex items-center gap-3">
-          <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save timings"}</Button>
-          {msg && <span className="text-sm text-green-600">{msg}</span>}
+          <Button variant="gradient" onClick={save} disabled={saving}>{saving ? "Saving..." : "Save Timings"}</Button>
+          {msg && <span className="text-sm text-green-600 font-medium">{msg}</span>}
         </div>
       </Card>
     </div>

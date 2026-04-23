@@ -47,16 +47,17 @@ export default function BookPage() {
   if (loading) return <Spinner />;
 
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-4">Book an Appointment</h2>
-      <Card className="p-6 max-w-lg">
-        <form onSubmit={submit} className="space-y-4">
-          <Input label="Your name *" value={form.patient_name} onChange={e => setForm({ ...form, patient_name: e.target.value })} required />
-          <Input label="Phone number *" type="tel" value={form.patient_phone} onChange={e => setForm({ ...form, patient_phone: e.target.value })} required />
-          <Input label="Email (optional)" type="email" value={form.patient_email} onChange={e => setForm({ ...form, patient_email: e.target.value })} />
+    <div className="animate-fade-in">
+      <h2 className="text-2xl font-bold mb-2">Book an Appointment</h2>
+      <p className="text-slate-500 mb-6">Fill in your details and we will get back to you shortly.</p>
+      <Card className="p-7 max-w-lg">
+        <form onSubmit={submit} className="space-y-5">
+          <Input label="Your name" value={form.patient_name} onChange={e => setForm({ ...form, patient_name: e.target.value })} placeholder="Enter your full name" required />
+          <Input label="Phone number" type="tel" value={form.patient_phone} onChange={e => setForm({ ...form, patient_phone: e.target.value })} placeholder="+91 98765 43210" required />
+          <Input label="Email (optional)" type="email" value={form.patient_email} onChange={e => setForm({ ...form, patient_email: e.target.value })} placeholder="you@example.com" />
 
           {svcs.length > 0 && (
-            <Select label="Service *"
+            <Select label="Service"
               options={svcs.map(s => ({ value: s.id, label: `${s.name} (Rs. ${s.fee})` }))}
               value={form.service_id} onChange={e => setForm({ ...form, service_id: e.target.value })} />
           )}
@@ -65,15 +66,15 @@ export default function BookPage() {
             options={[{ value: "", label: "No preference" }, ...docs.map(d => ({ value: d.id, label: d.name }))]}
             value={form.doctor_id} onChange={e => setForm({ ...form, doctor_id: e.target.value })} />
 
-          <div className="grid grid-cols-2 gap-3">
-            <Input label="Preferred date *" type="date" value={form.preferred_date} onChange={e => setForm({ ...form, preferred_date: e.target.value })} required />
-            <Input label="Preferred time *" type="time" value={form.preferred_time} onChange={e => setForm({ ...form, preferred_time: e.target.value })} required />
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Preferred date" type="date" value={form.preferred_date} onChange={e => setForm({ ...form, preferred_date: e.target.value })} required />
+            <Input label="Preferred time" type="time" value={form.preferred_time} onChange={e => setForm({ ...form, preferred_time: e.target.value })} required />
           </div>
 
-          <Textarea label="Notes" placeholder="Any additional details..." value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
+          <Textarea label="Notes (optional)" placeholder="Any additional details..." value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
 
-          {err && <p className="text-sm text-red-600">{err}</p>}
-          <Button type="submit" className="w-full" disabled={busy}>{busy ? "Submitting..." : "Request appointment"}</Button>
+          {err && <p className="text-sm text-red-600 bg-red-50 px-4 py-2 rounded-xl">{err}</p>}
+          <Button type="submit" variant="gradient" className="w-full" size="lg" disabled={busy}>{busy ? "Submitting..." : "Request Appointment"}</Button>
         </form>
       </Card>
     </div>

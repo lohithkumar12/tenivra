@@ -34,12 +34,17 @@ export default function ProfilePage() {
   if (!p) return null;
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Clinic Profile</h1>
-      <Card className="p-6 max-w-2xl space-y-4">
+    <div className="animate-fade-in">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Clinic Profile</h1>
+        <p className="text-sm text-slate-500 mt-1">Manage your clinic information visible to patients</p>
+      </div>
+      <Card className="p-7 max-w-2xl space-y-5">
         <Input label="Clinic Name" value={(p.name as string) || ""} onChange={e => upd("name", e.target.value)} />
-        <Input label="Phone" value={(p.phone as string) || ""} onChange={e => upd("phone", e.target.value)} />
-        <Input label="Email" value={(p.email as string) || ""} onChange={e => upd("email", e.target.value)} />
+        <div className="grid grid-cols-2 gap-4">
+          <Input label="Phone" value={(p.phone as string) || ""} onChange={e => upd("phone", e.target.value)} />
+          <Input label="Email" value={(p.email as string) || ""} onChange={e => upd("email", e.target.value)} />
+        </div>
         <Textarea label="Address" value={(p.address as string) || ""} onChange={e => upd("address", e.target.value)} />
         <Textarea label="Description" value={(p.description as string) || ""} onChange={e => upd("description", e.target.value)} />
         <Input
@@ -48,13 +53,15 @@ export default function ProfilePage() {
           onChange={e => upd("specializations", e.target.value.split(",").map(s => s.trim()).filter(Boolean))}
         />
         <div className="flex items-center gap-3">
-          <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save changes"}</Button>
-          {msg && <span className="text-sm text-green-600">{msg}</span>}
+          <Button variant="gradient" onClick={save} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
+          {msg && <span className="text-sm text-green-600 font-medium">{msg}</span>}
         </div>
-        <p className="text-xs text-slate-400">
-          Slug: <span className="font-mono">{p.slug as string}</span> — Public:
-          <a href={`/clinic/${p.slug}`} target="_blank" className="text-brand-600 hover:underline ml-1">/clinic/{p.slug as string}</a>
-        </p>
+        <div className="pt-4 border-t border-slate-100">
+          <p className="text-xs text-slate-400">
+            Slug: <span className="font-mono font-medium text-slate-500">{p.slug as string}</span> — Public page:
+            <a href={`/clinic/${p.slug}`} target="_blank" className="text-brand-600 hover:underline ml-1 font-medium">/clinic/{p.slug as string}</a>
+          </p>
+        </div>
       </Card>
     </div>
   );

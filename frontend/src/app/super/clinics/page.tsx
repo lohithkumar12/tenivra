@@ -44,58 +44,80 @@ export default function ClinicsPage() {
   if (loading) return <Spinner />;
 
   return (
-    <div>
+    <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Clinics</h1>
-        <Button onClick={() => { setForm(BLANK); setOpen(true); }}>Create clinic</Button>
+        <div>
+          <h1 className="text-2xl font-bold">Clinics</h1>
+          <p className="text-sm text-slate-500 mt-1">{list.length} clinic{list.length !== 1 ? "s" : ""} on the platform</p>
+        </div>
+        <Button variant="gradient" onClick={() => { setForm(BLANK); setOpen(true); }}>Create Clinic</Button>
       </div>
 
       {list.length === 0 ? <EmptyState message="No clinics yet." /> : (
-        <Card className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-slate-500 border-b bg-slate-50">
-                <th className="p-3">Name</th><th className="p-3">Slug</th><th className="p-3">Status</th><th className="p-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {list.map(t => (
-                <tr key={t.id} className="border-b last:border-0">
-                  <td className="p-3 font-medium">{t.name}</td>
-                  <td className="p-3 font-mono text-xs">{t.slug}</td>
-                  <td className="p-3">
-                    <Badge className={t.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
-                      {t.is_active ? "Active" : "Suspended"}
-                    </Badge>
-                  </td>
-                  <td className="p-3">
-                    <Button variant="ghost" size="sm" onClick={() => toggle(t)}>
-                      {t.is_active ? "Suspend" : "Activate"}
-                    </Button>
-                  </td>
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-wider text-slate-400 bg-slate-50">
+                  <th className="px-6 py-3 font-semibold">Clinic</th>
+                  <th className="px-6 py-3 font-semibold">Slug</th>
+                  <th className="px-6 py-3 font-semibold">Status</th>
+                  <th className="px-6 py-3 font-semibold text-right">Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {list.map(t => (
+                  <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white text-sm font-bold">
+                          {t.name.charAt(0)}
+                        </div>
+                        <span className="font-semibold">{t.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="font-mono text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded-lg">{t.slug}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <Badge className={t.is_active ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}>
+                        {t.is_active ? "Active" : "Suspended"}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <Button variant="ghost" size="sm" onClick={() => toggle(t)}>
+                        {t.is_active ? "Suspend" : "Activate"}
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Card>
       )}
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Create clinic">
-        <div className="space-y-3">
-          <Input label="Clinic name" value={form.name} onChange={e => {
+      <Modal open={open} onClose={() => setOpen(false)} title="Create Clinic">
+        <div className="space-y-4">
+          <Input label="Clinic Name" value={form.name} onChange={e => {
             const name = e.target.value;
             setForm({ ...form, name, slug: name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "") });
           }} />
           <Input label="Slug (URL path)" value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value })} />
-          <Input label="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
-          <Input label="Phone" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
-          <hr />
-          <p className="text-xs text-slate-500 font-semibold uppercase tracking-wide">Clinic admin account</p>
-          <Input label="Admin name" value={form.admin_name} onChange={e => setForm({ ...form, admin_name: e.target.value })} />
-          <Input label="Admin email" type="email" value={form.admin_email} onChange={e => setForm({ ...form, admin_email: e.target.value })} />
-          <Input label="Admin password" type="password" value={form.admin_password} onChange={e => setForm({ ...form, admin_password: e.target.value })} />
-          {err && <p className="text-sm text-red-600">{err}</p>}
-          <Button onClick={create} disabled={busy} className="w-full">{busy ? "Creating…" : "Create clinic"}</Button>
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+            <Input label="Phone" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+          </div>
+          <div className="border-t border-slate-100 pt-4 mt-4">
+            <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-3">Clinic Admin Account</p>
+            <div className="space-y-4">
+              <Input label="Admin Name" value={form.admin_name} onChange={e => setForm({ ...form, admin_name: e.target.value })} />
+              <Input label="Admin Email" type="email" value={form.admin_email} onChange={e => setForm({ ...form, admin_email: e.target.value })} />
+              <Input label="Admin Password" type="password" value={form.admin_password} onChange={e => setForm({ ...form, admin_password: e.target.value })} />
+            </div>
+          </div>
+          {err && <p className="text-sm text-red-600 bg-red-50 px-4 py-2 rounded-xl">{err}</p>}
+          <Button variant="gradient" onClick={create} disabled={busy} className="w-full">{busy ? "Creating..." : "Create Clinic"}</Button>
         </div>
       </Modal>
     </div>

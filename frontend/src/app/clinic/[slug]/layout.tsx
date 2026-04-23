@@ -20,39 +20,63 @@ export default function ClinicLayout({ children }: { children: React.ReactNode }
   }, [slug]);
 
   if (err) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <p className="text-slate-500">Clinic not found.</p>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="text-center">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
+          <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" /></svg>
+        </div>
+        <p className="text-slate-500 text-lg">Clinic not found</p>
+        <Link href="/" className="text-brand-600 text-sm mt-2 hover:underline inline-block">Go to homepage</Link>
+      </div>
     </div>
   );
   if (!clinic) return <Spinner />;
 
   const tabs = [
-    { href: `/clinic/${slug}`,            label: "Home" },
-    { href: `/clinic/${slug}/services`,   label: "Services" },
-    { href: `/clinic/${slug}/doctors`,    label: "Doctors" },
-    { href: `/clinic/${slug}/assistant`,  label: "Ask Us" },
-    { href: `/clinic/${slug}/book`,       label: "Book" },
+    { href: `/clinic/${slug}`, label: "Home", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
+    { href: `/clinic/${slug}/services`, label: "Services", icon: "M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" },
+    { href: `/clinic/${slug}/doctors`, label: "Doctors", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
+    { href: `/clinic/${slug}/assistant`, label: "Ask Us", icon: "M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" },
+    { href: `/clinic/${slug}/book`, label: "Book Now", icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" },
   ];
 
   return (
-    <div className="min-h-screen bg-white">
-      <header className="bg-brand-700 text-white">
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          <h1 className="text-2xl font-bold">{clinic.name}</h1>
-          {clinic.description && <p className="text-brand-100 text-sm mt-1 line-clamp-2 max-w-xl">{clinic.description}</p>}
+    <div className="min-h-screen bg-slate-50">
+      <header className="bg-gradient-to-r from-brand-700 via-brand-600 to-brand-800 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-grid-pattern opacity-10" />
+        <div className="relative z-10 max-w-5xl mx-auto px-4 pt-8 pb-2">
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-lg font-bold">
+              {clinic.name.charAt(0)}
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">{clinic.name}</h1>
+              {clinic.description && <p className="text-brand-100 text-sm mt-0.5 line-clamp-1 max-w-xl">{clinic.description}</p>}
+            </div>
+          </div>
         </div>
-        <nav className="max-w-4xl mx-auto px-4 flex gap-1 overflow-x-auto pb-px">
-          {tabs.map(t => (
-            <Link key={t.href} href={t.href}
-              className={`px-4 py-2 rounded-t-lg text-sm whitespace-nowrap transition-colors ${
-                path === t.href ? "bg-white text-brand-700 font-medium" : "text-brand-100 hover:bg-brand-600"
-              }`}>{t.label}</Link>
-          ))}
+        <nav className="relative z-10 max-w-5xl mx-auto px-4 flex gap-1 overflow-x-auto pb-0 mt-4">
+          {tabs.map(t => {
+            const active = path === t.href;
+            return (
+              <Link key={t.href} href={t.href}
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-t-xl text-sm whitespace-nowrap transition-all duration-200 ${
+                  active
+                    ? "bg-slate-50 text-brand-700 font-semibold shadow-sm"
+                    : "text-white/70 hover:text-white hover:bg-white/10"
+                }`}>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2 : 1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d={t.icon} />
+                </svg>
+                {t.label}
+              </Link>
+            );
+          })}
         </nav>
       </header>
-      <main className="max-w-4xl mx-auto px-4 py-8">{children}</main>
-      <footer className="text-center py-6 text-xs text-slate-400">
-        Powered by <Link href="/" className="text-brand-600 hover:underline">Tenivra</Link>
+      <main className="max-w-5xl mx-auto px-4 py-8">{children}</main>
+      <footer className="text-center py-8 text-xs text-slate-400">
+        Powered by <Link href="/" className="text-brand-600 hover:underline font-medium">Tenivra</Link>
       </footer>
     </div>
   );

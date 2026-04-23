@@ -44,57 +44,71 @@ export default function ApptsPage() {
   if (loading) return <Spinner />;
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Appointments</h1>
-
-      <div className="flex items-end gap-3 mb-4 flex-wrap">
-        <Select label="Status" options={ALL_STATUS.map(s => ({ value: s, label: s || "All" }))} value={statusFilter} onChange={e => setSF(e.target.value)} />
-        <Input label="Search" placeholder="Name or phone" value={search} onChange={e => setSearch(e.target.value)} />
-        <Button onClick={filter} variant="secondary">Filter</Button>
+    <div className="animate-fade-in">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Appointments</h1>
+        <p className="text-sm text-slate-500 mt-1">{list.length} appointment{list.length !== 1 ? "s" : ""} found</p>
       </div>
 
+      <Card className="p-4 mb-6">
+        <div className="flex items-end gap-4 flex-wrap">
+          <Select label="Status" options={ALL_STATUS.map(s => ({ value: s, label: s || "All" }))} value={statusFilter} onChange={e => setSF(e.target.value)} />
+          <Input label="Search" placeholder="Name or phone..." value={search} onChange={e => setSearch(e.target.value)} />
+          <Button onClick={filter} variant="secondary">Filter</Button>
+        </div>
+      </Card>
+
       {list.length === 0 ? <EmptyState message="No appointments found." /> : (
-        <Card className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-slate-500 border-b bg-slate-50">
-                <th className="p-3">Patient</th><th className="p-3">Service</th><th className="p-3">Doctor</th>
-                <th className="p-3">Date / Time</th><th className="p-3">Status</th><th className="p-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {list.map(a => (
-                <tr key={a.id} className="border-b last:border-0 hover:bg-slate-50/60">
-                  <td className="p-3">
-                    <div className="font-medium">{a.patient_name}</div>
-                    <div className="text-xs text-slate-400">{a.patient_phone}</div>
-                  </td>
-                  <td className="p-3">{a.service_name}</td>
-                  <td className="p-3">{a.doctor_name || "—"}</td>
-                  <td className="p-3 whitespace-nowrap">{a.preferred_date} {a.preferred_time}</td>
-                  <td className="p-3"><Badge className={statusColor(a.status)}>{a.status}</Badge></td>
-                  <td className="p-3">
-                    <Button variant="ghost" size="sm" onClick={() => { setSel(a); setNewSt(a.status); setNotes(a.admin_notes || ""); }}>Manage</Button>
-                  </td>
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-wider text-slate-400 bg-slate-50">
+                  <th className="px-6 py-3 font-semibold">Patient</th>
+                  <th className="px-6 py-3 font-semibold">Service</th>
+                  <th className="px-6 py-3 font-semibold">Doctor</th>
+                  <th className="px-6 py-3 font-semibold">Date / Time</th>
+                  <th className="px-6 py-3 font-semibold">Status</th>
+                  <th className="px-6 py-3 font-semibold text-right">Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {list.map(a => (
+                  <tr key={a.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="px-6 py-4">
+                      <p className="font-semibold">{a.patient_name}</p>
+                      <p className="text-xs text-slate-400">{a.patient_phone}</p>
+                    </td>
+                    <td className="px-6 py-4 text-slate-600">{a.service_name}</td>
+                    <td className="px-6 py-4 text-slate-600">{a.doctor_name || "—"}</td>
+                    <td className="px-6 py-4 text-slate-600 whitespace-nowrap">{a.preferred_date} {a.preferred_time}</td>
+                    <td className="px-6 py-4"><Badge className={statusColor(a.status)}>{a.status}</Badge></td>
+                    <td className="px-6 py-4 text-right">
+                      <Button variant="ghost" size="sm" onClick={() => { setSel(a); setNewSt(a.status); setNotes(a.admin_notes || ""); }}>Manage</Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Card>
       )}
 
-      <Modal open={!!sel} onClose={() => setSel(null)} title="Manage appointment">
+      <Modal open={!!sel} onClose={() => setSel(null)} title="Manage Appointment">
         {sel && (
-          <div className="space-y-3 text-sm">
-            <p><strong>Patient:</strong> {sel.patient_name} — {sel.patient_phone} {sel.patient_email && `(${sel.patient_email})`}</p>
-            <p><strong>Service:</strong> {sel.service_name}</p>
-            <p><strong>Doctor:</strong> {sel.doctor_name || "Not specified"}</p>
-            <p><strong>Date:</strong> {sel.preferred_date} at {sel.preferred_time}</p>
-            {sel.notes && <p><strong>Patient notes:</strong> {sel.notes}</p>}
-            <hr />
-            <Select label="Update status" options={ALL_STATUS.filter(Boolean).map(s => ({ value: s, label: s }))} value={newSt} onChange={e => setNewSt(e.target.value)} />
-            <Input label="Admin notes" value={notes} onChange={e => setNotes(e.target.value)} />
-            <Button onClick={update} className="w-full">Update</Button>
+          <div className="space-y-4">
+            <div className="bg-slate-50 rounded-xl p-4 space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-slate-400">Patient</span><span className="font-medium">{sel.patient_name}</span></div>
+              <div className="flex justify-between"><span className="text-slate-400">Phone</span><span className="font-medium">{sel.patient_phone}</span></div>
+              {sel.patient_email && <div className="flex justify-between"><span className="text-slate-400">Email</span><span className="font-medium">{sel.patient_email}</span></div>}
+              <div className="flex justify-between"><span className="text-slate-400">Service</span><span className="font-medium">{sel.service_name}</span></div>
+              <div className="flex justify-between"><span className="text-slate-400">Doctor</span><span className="font-medium">{sel.doctor_name || "Not specified"}</span></div>
+              <div className="flex justify-between"><span className="text-slate-400">Date</span><span className="font-medium">{sel.preferred_date} at {sel.preferred_time}</span></div>
+              {sel.notes && <div className="pt-2 border-t border-slate-200"><span className="text-slate-400 block mb-1">Patient Notes:</span><span className="text-slate-600">{sel.notes}</span></div>}
+            </div>
+            <Select label="Update Status" options={ALL_STATUS.filter(Boolean).map(s => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) }))} value={newSt} onChange={e => setNewSt(e.target.value)} />
+            <Input label="Admin Notes" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Add a note..." />
+            <Button variant="gradient" onClick={update} className="w-full">Update Status</Button>
           </div>
         )}
       </Modal>

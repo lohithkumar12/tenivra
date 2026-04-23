@@ -3,7 +3,44 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-slate-50 text-slate-800 antialiased;
+  html {
+    scroll-behavior: smooth;
   }
+  body {
+    @apply bg-slate-50 text-slate-800 antialiased font-sans;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-400 via-brand-500 to-accent-400;
+  }
+  .text-gradient-light {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-white via-brand-200 to-accent-400;
+  }
+  .bg-grid-pattern {
+    background-image: linear-gradient(rgba(99, 102, 241, 0.08) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(99, 102, 241, 0.08) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+  .glass {
+    @apply bg-white/10 backdrop-blur-xl border border-white/20;
+  }
+  .glass-light {
+    @apply bg-white/80 backdrop-blur-xl border border-white/50 shadow-xl;
+  }
+  .hover-lift {
+    @apply transition-all duration-300;
+  }
+  .hover-lift:hover {
+    @apply -translate-y-1 shadow-lg;
+  }
+  .glow-brand {
+    box-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
+  }
+  .delay-100 { animation-delay: 100ms; }
+  .delay-200 { animation-delay: 200ms; }
+  .delay-300 { animation-delay: 300ms; }
+  .delay-400 { animation-delay: 400ms; }
+  .delay-500 { animation-delay: 500ms; }
 }

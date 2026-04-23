@@ -22,19 +22,33 @@ export default function DoctorsPage() {
   if (loading) return <Spinner />;
 
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-4">Our Doctors</h2>
+    <div className="animate-fade-in">
+      <h2 className="text-2xl font-bold mb-6">Our Doctors</h2>
       {list.length === 0 ? <EmptyState message="No doctors listed yet." /> : (
-        <div className="grid gap-4">
+        <div className="grid sm:grid-cols-2 gap-5">
           {list.map(d => (
-            <Card key={d.id} className="p-5">
-              <h3 className="font-semibold">{d.name}</h3>
-              <p className="text-sm text-slate-500">{d.specialization}{d.qualification && ` · ${d.qualification}`}</p>
-              {d.bio && <p className="text-sm text-slate-600 mt-2">{d.bio}</p>}
-              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-slate-600">
-                <span>{d.available_days.join(", ")}</span>
-                <span>{d.available_from} – {d.available_to}</span>
-                <span>Rs. {d.consultation_fee}</span>
+            <Card key={d.id} variant="hover" className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white text-xl font-bold shrink-0">
+                  {d.name.split(" ").pop()?.charAt(0)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-lg">{d.name}</h3>
+                  <p className="text-sm text-brand-600 font-medium">{d.specialization}</p>
+                  {d.qualification && <p className="text-xs text-slate-400 mt-0.5">{d.qualification}</p>}
+                </div>
+                <span className="px-3 py-1 bg-brand-50 text-brand-700 rounded-full text-sm font-bold whitespace-nowrap">
+                  Rs. {d.consultation_fee}
+                </span>
+              </div>
+              {d.bio && <p className="text-sm text-slate-500 mt-3 leading-relaxed">{d.bio}</p>}
+              <div className="flex flex-wrap gap-2 mt-4">
+                {d.available_days.map(day => (
+                  <span key={day} className="px-2.5 py-1 bg-green-50 text-green-700 rounded-full text-xs font-semibold">{day}</span>
+                ))}
+                <span className="px-2.5 py-1 bg-slate-50 text-slate-600 rounded-full text-xs font-medium">
+                  {d.available_from} - {d.available_to}
+                </span>
               </div>
             </Card>
           ))}
