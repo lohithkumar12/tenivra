@@ -3,13 +3,24 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.database import engine, Base
+from app.database import engine, Base, SessionLocal
 from app.api import api_router
 
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     Base.metadata.create_all(bind=engine)
+    from app.models import Tenant
+    db = SessionLocal()
+    try:
+        if db.query(Tenant).count() == 0:
+            db.close()
+            from app.seed import seed
+            seed()
+    except Exception:
+        pass
+    finally:
+        db.close()
     yield
 
 
