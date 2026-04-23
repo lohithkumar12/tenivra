@@ -73,8 +73,8 @@ export function Badge({ children, className }: { children: ReactNode; className?
 
 /* ── Card ────────────────────────────────────────────────────────────── */
 
-export function Card({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn("bg-white rounded-xl border border-slate-200 shadow-sm", className)}>{children}</div>;
+export function Card({ children, className, ...rest }: { children: ReactNode; className?: string } & React.HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn("bg-white rounded-xl border border-slate-200 shadow-sm", className)} {...rest}>{children}</div>;
 }
 
 /* ── Modal ───────────────────────────────────────────────────────────── */
