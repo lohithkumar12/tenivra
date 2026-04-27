@@ -67,6 +67,42 @@ check("GET /api/auth/me (clinic admin)", s, 200, b)
 s, b = req("POST", "/api/auth/login", {"email": "bad@email.com", "password": "wrong"})
 check("POST /api/auth/login (bad creds)", s, 401, b)
 
+# ── Public Signup: Self-service Clinic Registration ─────────
+print("\n-- Public Signup --")
+import time
+unique = str(int(time.time()))
+s, b = req("POST", "/api/auth/signup", {
+    "clinic_name": f"Smoke Test Clinic {unique}",
+    "phone": "9876543210",
+    "admin_name": "Smoke Owner",
+    "admin_email": f"smoke{unique}@clinic.com",
+    "admin_password": "smoke123",
+})
+check("POST /api/auth/signup (new clinic)", s, 201, b)
+signup_token = b.get("access_token", "") if s == 201 else ""
+signup_user = b.get("user", {}) if s == 201 else {}
+if signup_token:
+    s, b = req("GET", "/api/auth/me", token=signup_token)
+    check("GET /api/auth/me (after signup)", s, 200, b)
+    s, b = req("GET", "/api/clinic/profile", token=signup_token)
+    check("GET /api/clinic/profile (new clinic)", s, 200, b)
+
+s, b = req("POST", "/api/auth/signup", {
+    "clinic_name": "Dup Email",
+    "admin_name": "X",
+    "admin_email": f"smoke{unique}@clinic.com",
+    "admin_password": "smoke123",
+})
+check("POST /api/auth/signup (duplicate email -> 400)", s, 400, b)
+
+s, b = req("POST", "/api/auth/signup", {
+    "clinic_name": "Short Pwd",
+    "admin_name": "X",
+    "admin_email": f"shortpw{unique}@clinic.com",
+    "admin_password": "12",
+})
+check("POST /api/auth/signup (short password -> 400)", s, 400, b)
+
 # ── Auth: Super Admin Login ─────────────────────────────────
 print("\n-- Auth: Super Admin --")
 s, b = req("POST", "/api/auth/login", {"email": "super@tenivra.com", "password": "super123"})
@@ -82,15 +118,16 @@ s, b = req("GET", "/api/admin/tenants", token=super_token)
 check("GET /api/admin/tenants", s, 200, b)
 tenant_count = len(b) if isinstance(b, list) else 0
 
+tenant_unique = str(int(time.time())) + "x"
 s, b = req("POST", "/api/admin/tenants", {
-    "name": "Test Clinic",
-    "slug": "test-clinic",
+    "name": f"Test Clinic {tenant_unique}",
+    "slug": f"test-clinic-{tenant_unique}",
     "email": "test@clinic.com",
     "phone": "9876543210",
     "address": "Test Address",
     "description": "Smoke test clinic",
     "specializations": ["General"],
-    "admin_email": "testadmin@clinic.com",
+    "admin_email": f"testadmin{tenant_unique}@clinic.com",
     "admin_password": "test123",
     "admin_name": "Test Admin",
 }, token=super_token)

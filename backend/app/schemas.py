@@ -33,6 +33,14 @@ class UserCreate(BaseModel):
     role: str = "clinic_admin"
 
 
+class ClinicSignupRequest(BaseModel):
+    clinic_name: str
+    phone: Optional[str] = None
+    admin_name: str
+    admin_email: str
+    admin_password: str
+
+
 # ── Tenant ───────────────────────────────────────────────────────────────
 
 class TenantCreate(BaseModel):

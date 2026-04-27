@@ -29,17 +29,25 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface-900 relative overflow-hidden">
-      <div className="absolute inset-0 bg-hero-gradient opacity-60" />
-      <div className="absolute inset-0 bg-grid-pattern" />
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-500/20 rounded-full blur-3xl animate-float" />
-      <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-accent-500/15 rounded-full blur-3xl animate-float delay-300" />
+    <div className="min-h-screen flex flex-col bg-surface-900 relative overflow-hidden">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-surface-900/80 backdrop-blur-xl border-b border-white/5">
+        <div className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
+          <Link href="/" className="text-xl font-bold text-white hover:text-white/90 transition-colors">
+            Tenivra
+          </Link>
+        </div>
+      </nav>
 
-      <div className="relative z-10 w-full max-w-md mx-4 animate-fade-in-up">
+      <div className="flex-1 flex items-center justify-center relative overflow-hidden pt-20">
+        <div className="absolute inset-0 bg-hero-gradient opacity-60" />
+        <div className="absolute inset-0 bg-grid-pattern" />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-500/20 rounded-full blur-3xl animate-float" />
+        <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-accent-500/15 rounded-full blur-3xl animate-float delay-300" />
+
+        <div className="relative z-10 w-full max-w-md mx-4 animate-fade-in-up">
         <div className="glass-light rounded-3xl p-8 sm:p-10">
           <div className="text-center mb-8">
-            <Link href="/" className="text-2xl font-bold text-gradient inline-block">Tenivra</Link>
-            <p className="text-slate-500 mt-2">Sign in to your clinic dashboard</p>
+            <p className="text-slate-500">Sign in to your clinic dashboard</p>
           </div>
 
           <form onSubmit={handle} className="space-y-5">
@@ -51,21 +59,20 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-slate-200 text-center space-y-2">
-            <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-3">Demo Credentials</p>
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="bg-slate-50 rounded-xl p-3">
-                <p className="font-semibold text-slate-600 mb-1">Clinic Admin</p>
-                <p className="text-slate-400 font-mono">admin@sunriseclinic.in</p>
-                <p className="text-slate-400 font-mono">admin123</p>
-              </div>
-              <div className="bg-slate-50 rounded-xl p-3">
-                <p className="font-semibold text-slate-600 mb-1">Super Admin</p>
-                <p className="text-slate-400 font-mono">super@tenivra.com</p>
-                <p className="text-slate-400 font-mono">super123</p>
-              </div>
+          <p className="mt-6 text-center text-sm text-slate-500">
+            New to Tenivra?{" "}
+            <Link href="/signup" className="text-brand-600 font-semibold hover:text-brand-700">Create a clinic account</Link>
+          </p>
+
+          <div className="mt-6 pt-6 border-t border-slate-200 text-center">
+            <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-3">Try the Demo</p>
+            <div className="bg-slate-50 rounded-xl p-3 text-xs">
+              <p className="font-semibold text-slate-600 mb-1">Sample Clinic Admin</p>
+              <p className="text-slate-400 font-mono">admin@sunriseclinic.in</p>
+              <p className="text-slate-400 font-mono">admin123</p>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>

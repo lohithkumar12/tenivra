@@ -31,13 +31,18 @@ export default function HomePage() {
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-surface-900/80 backdrop-blur-xl border-b border-white/5">
         <div className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
-          <span className="text-xl font-bold text-white">Tenivra</span>
-          <div className="flex items-center gap-3">
-            <Link href="/clinic/sunrise-clinic">
+          <Link href="/" className="text-xl font-bold text-white hover:text-white/90 transition-colors">
+            Tenivra
+          </Link>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link href="/clinic/sunrise-clinic" className="hidden sm:block">
               <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white hover:bg-white/10">Live Demo</Button>
             </Link>
             <Link href="/login">
-              <Button variant="gradient" size="sm">Sign In</Button>
+              <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white hover:bg-white/10">Sign In</Button>
+            </Link>
+            <Link href="/signup">
+              <Button variant="gradient" size="sm">Sign Up Free</Button>
             </Link>
           </div>
         </div>
@@ -68,12 +73,12 @@ export default function HomePage() {
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4 animate-fade-in-up delay-300 opacity-0">
-            <Link href="/clinic/sunrise-clinic">
-              <Button variant="gradient" size="xl">See Live Demo</Button>
+            <Link href="/signup">
+              <Button variant="gradient" size="xl">Start Free — No Card Required</Button>
             </Link>
-            <Link href="/login">
+            <Link href="/clinic/sunrise-clinic">
               <Button variant="secondary" size="xl" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-                Open Dashboard
+                See Live Demo
               </Button>
             </Link>
           </div>
@@ -160,7 +165,7 @@ export default function HomePage() {
                 Join clinics already using Tenivra to handle patient queries and bookings automatically.
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <Link href="/login">
+                <Link href="/signup">
                   <Button size="xl" className="bg-white text-brand-700 hover:bg-brand-50 shadow-xl">Get Started Free</Button>
                 </Link>
                 <Link href="/clinic/sunrise-clinic">
@@ -185,8 +190,9 @@ export default function HomePage() {
             <div>
               <h4 className="font-semibold text-sm uppercase tracking-wider text-slate-400 mb-4">Product</h4>
               <ul className="space-y-2 text-sm text-slate-300">
+                <li><Link href="/signup" className="hover:text-white transition-colors">Sign Up Free</Link></li>
+                <li><Link href="/login" className="hover:text-white transition-colors">Sign In</Link></li>
                 <li><Link href="/clinic/sunrise-clinic" className="hover:text-white transition-colors">Live Demo</Link></li>
-                <li><Link href="/login" className="hover:text-white transition-colors">Dashboard</Link></li>
               </ul>
             </div>
             <div>
