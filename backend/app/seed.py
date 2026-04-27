@@ -42,6 +42,7 @@ def seed():
         plan=TenantPlan.STARTER.value,
         monthly_price_cents=PLAN_DEFAULT_PRICE_CENTS[TenantPlan.STARTER.value],
         subscription_status=SubscriptionStatus.ACTIVE.value,
+        onboarding_completed=True,
     )
     db.add(clinic)
     db.flush()

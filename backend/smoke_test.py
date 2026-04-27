@@ -6,8 +6,19 @@ import json
 import urllib.request
 import urllib.error
 import sys
+import time
+from datetime import datetime, timedelta
 
 BASE = "http://127.0.0.1:8000"
+
+
+def smoke_booking_monday(slot=0):
+    """Next Monday — smoke bulk timings only Mon open. slot + time spread avoids 409 on re-runs."""
+    base_days = 10 + slot * 14 + (int(time.time()) % 21)
+    d = datetime.now() + timedelta(days=base_days)
+    while d.weekday() != 0:
+        d += timedelta(days=1)
+    return d.strftime("%Y-%m-%d")
 PASS = 0
 FAIL = 0
 ERRORS = []
@@ -67,9 +78,11 @@ check("GET /api/auth/me (clinic admin)", s, 200, b)
 s, b = req("POST", "/api/auth/login", {"email": "bad@email.com", "password": "wrong"})
 check("POST /api/auth/login (bad creds)", s, 401, b)
 
+s, b = req("POST", "/api/auth/forgot-password", {"email": "admin@sunriseclinic.in"})
+check("POST /api/auth/forgot-password", s, 200, b)
+
 # ── Public Signup: Self-service Clinic Registration ─────────
 print("\n-- Public Signup --")
-import time
 unique = str(int(time.time()))
 s, b = req("POST", "/api/auth/signup", {
     "clinic_name": f"Smoke Test Clinic {unique}",
@@ -86,6 +99,8 @@ if signup_token:
     check("GET /api/auth/me (after signup)", s, 200, b)
     s, b = req("GET", "/api/clinic/profile", token=signup_token)
     check("GET /api/clinic/profile (new clinic)", s, 200, b)
+    s, b = req("GET", "/api/clinic/onboarding", token=signup_token)
+    check("GET /api/clinic/onboarding (new clinic)", s, 200, b)
 
 s, b = req("POST", "/api/auth/signup", {
     "clinic_name": "Dup Email",
@@ -196,6 +211,9 @@ s, b = req("PATCH", "/api/clinic/profile", {
     "description": "Updated by smoke test"
 }, token=admin_token)
 check("PATCH /api/clinic/profile", s, 200, b)
+
+s, b = req("GET", "/api/clinic/onboarding", token=admin_token)
+check("GET /api/clinic/onboarding (sunrise)", s, 200, b)
 
 # ── Clinic Admin: Doctors CRUD ──────────────────────────────
 print("\n-- Clinic Admin: Doctors --")
@@ -343,13 +361,14 @@ check("GET /api/public/:slug/appointment-rules", s, 200, b)
 if pub_services:
     svc_id = pub_services[0]["id"]
     doc_id = pub_doctors[0]["id"] if pub_doctors else None
+    d_guest = smoke_booking_monday(0)
     appt_body = {
         "patient_name": "Smoke Test Patient",
         "patient_phone": "9999999999",
         "patient_email": "smoke@test.com",
         "service_id": svc_id,
-        "preferred_date": "2026-04-25",
-        "preferred_time": "10:00",
+        "preferred_date": d_guest,
+        "preferred_time": "10:15",
         "notes": "Smoke test appointment",
     }
     if doc_id:
@@ -400,13 +419,14 @@ check("GET /api/patient/appointments (empty)", s, 200, b)
 
 # Book as authenticated patient → should attach patient_user_id
 if pub_services:
+    d_pat = smoke_booking_monday(1)
     appt_body = {
         "patient_name": "Smoke Patient",
         "patient_phone": "9000000000",
         "patient_email": f"smokepatient{puniq}@example.com",
         "service_id": pub_services[0]["id"],
-        "preferred_date": "2026-04-26",
-        "preferred_time": "11:00",
+        "preferred_date": d_pat,
+        "preferred_time": "15:00",
         "notes": "Booked while logged in",
     }
     s, b = req("POST", f"/api/public/{SLUG}/appointments", appt_body, token=patient_token)

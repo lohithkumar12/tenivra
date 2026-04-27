@@ -12,6 +12,15 @@ class Settings(BaseSettings):
     openai_api_key: Optional[str] = None
     assistant_model: str = "gpt-4o-mini"
     assistant_max_history: int = 24
+    # Public URL of the Next.js app (password-reset links, booking URLs in emails)
+    public_app_url: str = "http://localhost:3000"
+    # Transactional email (https://resend.com). If unset, emails are logged only.
+    resend_api_key: Optional[str] = None
+    email_from: str = "Tenivra <onboarding@resend.dev>"
+    # SMS (Twilio). If unset, SMS is logged only.
+    twilio_account_sid: Optional[str] = None
+    twilio_auth_token: Optional[str] = None
+    twilio_from_number: Optional[str] = None  # E.164
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

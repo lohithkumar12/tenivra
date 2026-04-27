@@ -1,10 +1,12 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { Spinner } from "@/components/ui";
 import Link from "next/link";
 import { ReactNode } from "react";
+import { OnboardingBanner } from "@/components/OnboardingBanner";
 
 const NAV = [
   { href: "/admin", label: "Dashboard", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
@@ -22,8 +24,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const path = usePathname();
 
+  useEffect(() => {
+    if (user?.role === "super_admin") router.replace("/super");
+  }, [user, router]);
+
   if (loading) return <Spinner />;
-  if (!user || (user.role !== "clinic_admin" && user.role !== "super_admin")) {
+  if (user?.role === "super_admin") return null;
+  if (!user || (user.role !== "clinic_admin" && user.role !== "receptionist")) {
     router.push("/login");
     return null;
   }
@@ -74,7 +81,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </button>
         </div>
       </aside>
-      <main className="flex-1 p-8 overflow-y-auto bg-slate-50">{children}</main>
+      <main className="flex-1 p-8 overflow-y-auto bg-slate-50">
+        <OnboardingBanner />
+        {children}
+      </main>
     </div>
   );
 }

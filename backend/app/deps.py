@@ -63,6 +63,20 @@ def require_clinic_admin(user: User = Depends(get_current_user)) -> User:
     return user
 
 
+def require_clinic_workspace(user: User = Depends(get_current_user)) -> User:
+    """Tenant-scoped clinic APIs — blocks super admins (they use /super, not /admin)."""
+    if user.role == UserRole.SUPER_ADMIN.value:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Use the founder console for platform administration. Clinic tools require a clinic staff login.",
+        )
+    if user.role not in (UserRole.CLINIC_ADMIN.value, UserRole.RECEPTIONIST.value):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Clinic staff access required")
+    if not user.tenant_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No clinic linked to this account")
+    return user
+
+
 def require_super_admin(user: User = Depends(get_current_user)) -> User:
     if user.role != UserRole.SUPER_ADMIN.value:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Super admin access required")

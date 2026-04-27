@@ -49,6 +49,15 @@ class PatientSignupRequest(BaseModel):
     password: str
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+
 # ── Public clinic directory ──────────────────────────────────────────────
 
 class PublicClinicSummary(BaseModel):
@@ -110,6 +119,7 @@ class TenantResponse(BaseModel):
     plan: str = "free"
     monthly_price_cents: int = 0
     subscription_status: str = "trial"
+    onboarding_completed: bool = False
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -266,6 +276,16 @@ class ClinicProfileUpdate(BaseModel):
     email: Optional[str] = None
     description: Optional[str] = None
     specializations: Optional[list[str]] = None
+    onboarding_completed: Optional[bool] = None
+
+
+class OnboardingStatusResponse(BaseModel):
+    onboarding_completed: bool
+    has_doctors: bool
+    has_services: bool
+    has_open_days: bool
+    public_clinic_url: str
+    brand_tagline: str = "Tenivra Pulse — verified slots & AI receptionist. Not generic automation."
 
 
 # ── Doctor ───────────────────────────────────────────────────────────────
@@ -471,7 +491,17 @@ class AssistantQuery(BaseModel):
     history: list[AssistantHistoryTurn] = Field(default_factory=list)
 
 
+class BookingPrefill(BaseModel):
+    """Filled by AI assistant when patient is ready to book — opens booking with query params."""
+    service_id: Optional[str] = None
+    doctor_id: Optional[str] = None
+    preferred_date: Optional[str] = None
+    preferred_time: Optional[str] = None
+    notes_for_staff: Optional[str] = None
+
+
 class AssistantResponse(BaseModel):
     message: str
     type: str = "text"
     data: Optional[dict] = None
+    booking_prefill: Optional[BookingPrefill] = None

@@ -22,6 +22,8 @@ def _ensure_columns():
     tables = inspector.get_table_names()
     if "users" in tables:
         add("users", "phone", "VARCHAR(20)")
+        add("users", "password_reset_token", "VARCHAR(128)")
+        add("users", "password_reset_expires", "DATETIME")
     if "appointments" in tables:
         add("appointments", "patient_user_id", "VARCHAR(36)")
     if "tenants" in tables:
@@ -31,6 +33,7 @@ def _ensure_columns():
         add("tenants", "subscription_status", "VARCHAR(20) DEFAULT 'trial' NOT NULL")
         add("tenants", "stripe_customer_id", "VARCHAR(120)")
         add("tenants", "stripe_subscription_id", "VARCHAR(120)")
+        add("tenants", "onboarding_completed", "BOOLEAN DEFAULT FALSE NOT NULL")
 
 
 @asynccontextmanager

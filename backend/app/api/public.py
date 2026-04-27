@@ -8,6 +8,9 @@ from app.models import (
     Tenant, Doctor, Service, FAQ, ClinicTiming,
     AppointmentRule, Appointment, AppointmentStatus, User, UserRole,
 )
+from app.config import get_settings
+from app.services.booking_validate import validate_public_booking
+from app.services.notifications import notify_booking_created
 from app.schemas import (
     TenantResponse, DoctorResponse, ServiceResponse, FAQResponse,
     ClinicTimingResponse, AppointmentRuleResponse,
@@ -114,7 +117,15 @@ def book_appointment(
     if not svc:
         raise HTTPException(status_code=400, detail="Invalid service")
 
+    doctor = None
+    if body.doctor_id:
+        doctor = db.query(Doctor).filter(Doctor.id == body.doctor_id, Doctor.tenant_id == t.id).first()
+        if not doctor:
+            raise HTTPException(status_code=400, detail="Invalid doctor for this clinic")
+
     rules = db.query(AppointmentRule).filter(AppointmentRule.tenant_id == t.id).first()
+    validate_public_booking(db, t, body, rules, doctor)
+
     initial = AppointmentStatus.PENDING.value
     if rules and not rules.manual_approval_required:
         initial = AppointmentStatus.CONFIRMED.value
@@ -132,6 +143,21 @@ def book_appointment(
     db.add(appt)
     db.commit()
     db.refresh(appt)
+
+    settings = get_settings()
+    base = settings.public_app_url.rstrip("/")
+    notify_booking_created(
+        patient_email=body.patient_email,
+        patient_phone=body.patient_phone,
+        patient_name=body.patient_name,
+        clinic_name=t.name,
+        clinic_email=t.email,
+        service_name=svc.name,
+        status=initial,
+        preferred_date=body.preferred_date,
+        preferred_time=body.preferred_time,
+        public_book_url=f"{base}/clinic/{t.slug}",
+    )
 
     r = AppointmentResponse.model_validate(appt)
     r.service_name = svc.name

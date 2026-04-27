@@ -9,6 +9,18 @@ import { Button, Card } from "@/components/ui";
 
 interface Msg { role: "user" | "assistant"; text: string; }
 
+interface AssistantRes {
+  message: string;
+  type?: string;
+  booking_prefill?: {
+    service_id?: string | null;
+    doctor_id?: string | null;
+    preferred_date?: string | null;
+    preferred_time?: string | null;
+    notes_for_staff?: string | null;
+  } | null;
+}
+
 export default function AssistantPage() {
   const { slug } = useParams();
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -16,11 +28,12 @@ export default function AssistantPage() {
     {
       role: "assistant",
       text:
-        "Hi — I'm your AI assistant for this clinic. Ask me anything about timings, doctors, services, fees, or how to book. I answer from this clinic's live profile (and you can always book below).",
+        "Hi — I'm Tenivra's AI receptionist for this clinic. I answer from live clinic data (not canned scripts). Ask about timings, doctors, fees — or tell me what you need booked and I'll line up a verified slot on the booking page.",
     },
   ]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [prefillUrl, setPrefillUrl] = useState<string | null>(null);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs]);
 
@@ -31,13 +44,25 @@ export default function AssistantPage() {
     setInput("");
     setMsgs(prev => [...prev, { role: "user", text }]);
     setBusy(true);
+    setPrefillUrl(null);
     try {
-      const res = await api.post<{ message: string; type?: string }>(
+      const res = await api.post<AssistantRes>(
         `/api/public/${slug}/assistant`,
         { message: text, history: historyPayload },
       );
       track(Events.AssistantMessage, { slug, response_type: res.type ?? "text" });
       setMsgs(prev => [...prev, { role: "assistant", text: res.message }]);
+      const p = res.booking_prefill;
+      if (p) {
+        const q = new URLSearchParams();
+        if (p.service_id) q.set("service_id", p.service_id);
+        if (p.doctor_id) q.set("doctor_id", p.doctor_id);
+        if (p.preferred_date) q.set("preferred_date", p.preferred_date);
+        if (p.preferred_time) q.set("preferred_time", p.preferred_time);
+        if (p.notes_for_staff) q.set("notes", p.notes_for_staff);
+        const qs = q.toString();
+        if (qs) setPrefillUrl(`/clinic/${slug}/book?${qs}`);
+      }
     } catch {
       setMsgs(prev => [...prev, { role: "assistant", text: "Sorry, something went wrong. Please try again." }]);
     } finally {
@@ -52,7 +77,7 @@ export default function AssistantPage() {
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
         <div>
           <h2 className="text-2xl font-bold">AI Assistant</h2>
-          <p className="text-slate-500 text-sm mt-1">Powered by your clinic data — accurate, up-to-date answers.</p>
+          <p className="text-slate-500 text-sm mt-1">Pulse-grade answers from your real clinic profile — plus one-tap handoff to verified booking.</p>
         </div>
         <Link href={`/clinic/${slug}/book`}>
           <Button variant="gradient" size="md" className="whitespace-nowrap shadow-lg shadow-brand-500/25">
@@ -114,6 +139,17 @@ export default function AssistantPage() {
           </Button>
         </div>
       </Card>
+
+      {prefillUrl && (
+        <div className="max-w-2xl mt-4 p-4 rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-brand-50 flex flex-col sm:flex-row sm:items-center gap-3 animate-fade-in">
+          <p className="text-sm text-emerald-950 flex-1">
+            <strong className="text-emerald-800">Tenivra Pulse:</strong> your chat details are ready on our verified booking flow — no double-booking at the same doctor &amp; time.
+          </p>
+          <Link href={prefillUrl} className="shrink-0">
+            <Button variant="gradient" size="md" className="w-full sm:w-auto">Open verified booking</Button>
+          </Link>
+        </div>
+      )}
 
       <p className="text-xs text-slate-400 mt-3 max-w-2xl">
         AI answers use this clinic&apos;s published information. For emergencies, call your local emergency number or visit the nearest hospital.

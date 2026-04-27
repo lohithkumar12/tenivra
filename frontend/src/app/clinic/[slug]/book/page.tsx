@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -11,9 +11,10 @@ import { Button, Card, Input, Textarea, Select, Spinner } from "@/components/ui"
 interface Svc { id: string; name: string; fee: number; }
 interface Doc { id: string; name: string; }
 
-export default function BookPage() {
+function BookInner() {
   const { slug } = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, token } = useAuth();
   const isPatient = user?.role === "patient";
 
@@ -35,9 +36,18 @@ export default function BookPage() {
       api.get<Doc[]>(`/api/public/${slug}/doctors`),
     ]).then(([s, d]) => {
       setSvcs(s); setDocs(d);
-      if (s.length) setForm(f => ({ ...f, service_id: s[0].id }));
+      const qSid = searchParams.get("service_id");
+      const pick = qSid && s.some(x => x.id === qSid) ? qSid : (s[0]?.id ?? "");
+      setForm(f => ({
+        ...f,
+        service_id: pick,
+        doctor_id: searchParams.get("doctor_id") || "",
+        preferred_date: searchParams.get("preferred_date") || "",
+        preferred_time: searchParams.get("preferred_time") || "",
+        notes: searchParams.get("notes") || "",
+      }));
     }).finally(() => setLoading(false));
-  }, [slug]);
+  }, [slug, searchParams]);
 
   useEffect(() => {
     if (isPatient && user) {
@@ -74,10 +84,23 @@ export default function BookPage() {
 
   if (loading) return <Spinner />;
 
+  const fromAi = Boolean(searchParams.get("service_id") || searchParams.get("preferred_date"));
+
   return (
     <div className="animate-fade-in">
       <h2 className="text-2xl font-bold mb-2">Book an Appointment</h2>
-      <p className="text-slate-500 mb-6">Fill in your details and we will get back to you shortly.</p>
+      <p className="text-slate-500 mb-4">Fill in your details and we will get back to you shortly.</p>
+
+      <div className="mb-5 max-w-lg p-4 rounded-2xl bg-gradient-to-r from-brand-50 to-violet-50 border border-brand-100 text-sm text-slate-700">
+        <p className="font-semibold text-brand-800">Tenivra verified booking</p>
+        <p className="mt-1">Your time is checked against clinic hours, doctor schedules, and existing bookings — unlike generic forms that accept impossible slots.</p>
+      </div>
+
+      {fromAi && (
+        <div className="mb-5 max-w-lg p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-sm text-emerald-900">
+          Details from your AI chat were copied here. Adjust if needed, then submit.
+        </div>
+      )}
 
       {!user && (
         <div className="mb-5 max-w-lg p-4 rounded-2xl bg-brand-50 border border-brand-100 text-sm text-slate-700">
@@ -125,5 +148,13 @@ export default function BookPage() {
         </form>
       </Card>
     </div>
+  );
+}
+
+export default function BookPage() {
+  return (
+    <Suspense fallback={<Spinner />}>
+      <BookInner />
+    </Suspense>
   );
 }

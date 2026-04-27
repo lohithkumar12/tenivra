@@ -6,16 +6,39 @@ Falls back to rule-based `process_query` when OPENAI_API_KEY is missing or on AP
 
 from __future__ import annotations
 
+import json
 import logging
 from typing import Any
 
 from app.config import get_settings
-from app.schemas import AssistantResponse
+from app.schemas import AssistantResponse, BookingPrefill
 from app.services.assistant import process_query
 
 logger = logging.getLogger(__name__)
 
 DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+BOOKING_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "suggest_booking_handoff",
+        "description": (
+            "When the user wants to book or you have gathered service/doctor/date/time. "
+            "Use ONLY service_id and doctor_id UUIDs copied exactly from clinic facts. "
+            "Date YYYY-MM-DD, time HH:MM 24h. Tenivra will verify the slot is free."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "service_id": {"type": "string"},
+                "doctor_id": {"type": "string"},
+                "preferred_date": {"type": "string"},
+                "preferred_time": {"type": "string"},
+                "notes_for_staff": {"type": "string"},
+            },
+        },
+    },
+}
 
 
 def _fmt_timings_compact(timings: list[dict]) -> str:
@@ -146,35 +169,63 @@ def run_llm_assistant(
 
     ctx = build_clinic_context_block(clinic_data, slug)
     system = (
-        "You are the friendly virtual receptionist for this healthcare clinic on the Tenivra platform.\n\n"
+        "You are the AI receptionist for this clinic on Tenivra — a platform built for Indian clinics with "
+        "**verified slots** (no double-booking at the same doctor & time), smart notifications, and Pulse onboarding. "
+        "You are more capable than generic chatbots because you only use live clinic data.\n\n"
         "RULES:\n"
-        "1. Answer ONLY using the clinic facts below. If something is not listed, say you do not have that "
-        "detail and suggest calling the clinic phone number from the facts.\n"
+        "1. Answer ONLY using the clinic facts below. If missing, say so and suggest calling the clinic phone.\n"
         "2. Never invent doctors, prices, timings, or policies.\n"
-        "3. Be concise (2–6 short paragraphs max unless the user asks for a list). Warm and professional.\n"
-        "4. If the user writes in Hindi or another language, reply in the same language.\n"
-        "5. For booking: explain they can use the Book Appointment page on this site (path given below). "
-        "You cannot book for them in chat—direct them to that page with name, phone, preferred date/time, and service.\n"
-        "6. Do not give medical diagnoses or treatment advice; suggest seeing a doctor for clinical concerns.\n\n"
+        "3. Be concise. Warm and professional. If the user writes Hindi or another language, reply in that language.\n"
+        "4. When someone is ready to book, call suggest_booking_handoff with real UUIDs from the facts. "
+        "Remind them Tenivra will verify the slot against clinic hours before confirming.\n"
+        "5. Do not diagnose or prescribe; encourage seeing a clinician for medical concerns.\n\n"
         f"CLINIC FACTS:\n{ctx}"
     )
 
     client = OpenAI(api_key=settings.openai_api_key)
-    messages: list[dict[str, str]] = [{"role": "system", "content": system}]
+    messages: list[Any] = [{"role": "system", "content": system}]
     messages.extend(_history_to_messages(history))
     messages.append({"role": "user", "content": message.strip()[:8000]})
 
     resp = client.chat.completions.create(
         model=settings.assistant_model,
         messages=messages,
-        temperature=0.5,
+        tools=[BOOKING_TOOL],
+        tool_choice="auto",
+        temperature=0.45,
         max_tokens=900,
     )
-    text = (resp.choices[0].message.content or "").strip()
-    if not text:
+    msg = resp.choices[0].message
+    text = (msg.content or "").strip()
+    prefill: BookingPrefill | None = None
+    tool_calls = getattr(msg, "tool_calls", None)
+    if tool_calls:
+        for tc in tool_calls:
+            if tc.function.name == "suggest_booking_handoff":
+                try:
+                    raw = json.loads(tc.function.arguments or "{}")
+                    data = {k: raw[k] for k in BookingPrefill.model_fields if k in raw and raw[k] not in (None, "")}
+                    prefill = BookingPrefill(**data) if data else None
+                except Exception as ex:
+                    logger.debug("prefill parse: %s", ex)
+        if not text:
+            text = (
+                "I've carried your choices from this chat to our booking page. Continue there to confirm — "
+                "Tenivra checks clinic hours and blocks double-booked slots automatically."
+            )
+
+    if not text and not prefill:
         return None
 
-    return AssistantResponse(message=text, type="llm", data={"model": settings.assistant_model})
+    if not text:
+        text = "Use the booking button below with the details we discussed."
+
+    return AssistantResponse(
+        message=text,
+        type="llm",
+        data={"model": settings.assistant_model},
+        booking_prefill=prefill,
+    )
 
 
 def assistant_reply(

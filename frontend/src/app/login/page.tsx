@@ -57,6 +57,9 @@ export default function LoginPage() {
             <Button type="submit" variant="gradient" className="w-full" size="lg" disabled={busy}>
               {busy ? "Signing in..." : "Sign In"}
             </Button>
+            <p className="text-center text-sm">
+              <Link href="/forgot-password" className="text-brand-600 font-semibold hover:underline">Forgot password?</Link>
+            </p>
           </form>
 
           <div className="mt-6 text-center text-sm text-slate-500 space-y-1">

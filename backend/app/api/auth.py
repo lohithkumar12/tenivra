@@ -1,6 +1,8 @@
 import re
+import secrets
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from datetime import datetime, timedelta, timezone
 from jose import jwt
 import bcrypt
@@ -8,8 +10,12 @@ import bcrypt
 from app.database import get_db
 from app.config import get_settings
 from app.models import User, Tenant, AppointmentRule, UserRole
-from app.schemas import LoginRequest, TokenResponse, UserResponse, ClinicSignupRequest, PatientSignupRequest
+from app.schemas import (
+    LoginRequest, TokenResponse, UserResponse, ClinicSignupRequest, PatientSignupRequest,
+    ForgotPasswordRequest, ResetPasswordRequest,
+)
 from app.deps import get_current_user
+from app.services.notifications import send_password_reset_email
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -96,3 +102,36 @@ def patient_signup(body: PatientSignupRequest, db: Session = Depends(get_db)):
 @router.get("/me", response_model=UserResponse)
 def me(user: User = Depends(get_current_user)):
     return UserResponse.model_validate(user)
+
+
+@router.post("/forgot-password")
+def forgot_password(body: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    email = body.email.strip().lower()
+    user = db.query(User).filter(func.lower(User.email) == email).first()
+    if user:
+        token = secrets.token_urlsafe(32)
+        user.password_reset_token = token
+        user.password_reset_expires = datetime.now(timezone.utc) + timedelta(hours=1)
+        db.commit()
+        settings = get_settings()
+        link = f"{settings.public_app_url.rstrip('/')}/reset-password?token={token}"
+        send_password_reset_email(user.email, user.full_name or "there", link)
+    return {"ok": True, "detail": "If an account exists, we sent reset instructions."}
+
+
+@router.post("/reset-password")
+def reset_password(body: ResetPasswordRequest, db: Session = Depends(get_db)):
+    if len(body.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    user = db.query(User).filter(User.password_reset_token == body.token).first()
+    now = datetime.now(timezone.utc)
+    exp = user.password_reset_expires if user else None
+    if exp is not None and exp.tzinfo is None:
+        exp = exp.replace(tzinfo=timezone.utc)
+    if not user or not exp or exp < now:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+    user.hashed_password = bcrypt.hashpw(body.new_password.encode(), bcrypt.gensalt()).decode()
+    user.password_reset_token = None
+    user.password_reset_expires = None
+    db.commit()
+    return {"ok": True}

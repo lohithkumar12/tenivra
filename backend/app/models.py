@@ -76,6 +76,7 @@ class Tenant(Base):
     subscription_status = Column(String(20), default=SubscriptionStatus.TRIAL.value, nullable=False)
     stripe_customer_id = Column(String(120))
     stripe_subscription_id = Column(String(120))
+    onboarding_completed = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), default=_now)
     updated_at = Column(DateTime(timezone=True), default=_now, onupdate=_now)
 
@@ -104,6 +105,8 @@ class User(Base):
     full_name = Column(String(255), nullable=False)
     role = Column(String(20), nullable=False, default=UserRole.CLINIC_ADMIN.value)
     is_active = Column(Boolean, default=True)
+    password_reset_token = Column(String(128))
+    password_reset_expires = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True), default=_now)
     updated_at = Column(DateTime(timezone=True), default=_now, onupdate=_now)
 
