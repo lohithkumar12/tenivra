@@ -115,6 +115,68 @@ class TenantSummary(BaseModel):
     created_at: Optional[datetime] = None
 
 
+# ── Platform metrics (super admin) ───────────────────────────────────────
+
+class MetricDelta(BaseModel):
+    current: int
+    previous: int
+
+
+class TrendPoint(BaseModel):
+    date: str
+    clinics: int
+    patients: int
+    bookings: int
+
+
+class TopClinic(BaseModel):
+    id: str
+    name: str
+    slug: str
+    booking_count: int
+    last_booking_at: Optional[datetime] = None
+
+
+class AtRiskClinic(BaseModel):
+    id: str
+    name: str
+    slug: str
+    signed_up_at: datetime
+    days_since_signup: int
+    admin_email: Optional[str] = None
+
+
+class RecentClinic(BaseModel):
+    id: str
+    name: str
+    slug: str
+    signed_up_at: datetime
+
+
+class RecentPatient(BaseModel):
+    id: str
+    full_name: str
+    email: str
+    signed_up_at: datetime
+
+
+class PlatformMetrics(BaseModel):
+    total_clinics: int
+    active_clinics: int
+    total_patients: int
+    total_bookings: int
+    pending_bookings: int
+    avg_bookings_per_active_clinic: float
+    clinics_added: MetricDelta
+    patients_added: MetricDelta
+    bookings: MetricDelta
+    trend_30d: list[TrendPoint]
+    top_clinics: list[TopClinic]
+    at_risk_clinics: list[AtRiskClinic]
+    recent_clinics: list[RecentClinic]
+    recent_patients: list[RecentPatient]
+
+
 # ── Clinic profile ───────────────────────────────────────────────────────
 
 class ClinicProfileUpdate(BaseModel):

@@ -118,6 +118,21 @@ s, b = req("GET", "/api/admin/tenants", token=super_token)
 check("GET /api/admin/tenants", s, 200, b)
 tenant_count = len(b) if isinstance(b, list) else 0
 
+# ── Super Admin: Platform Metrics ───────────────────────────
+print("\n-- Super Admin: Metrics --")
+s, b = req("GET", "/api/admin/metrics", token=super_token)
+check("GET /api/admin/metrics", s, 200, b)
+if s == 200 and isinstance(b, dict):
+    expected_keys = {"total_clinics", "active_clinics", "total_patients", "total_bookings",
+                     "pending_bookings", "trend_30d", "top_clinics", "at_risk_clinics",
+                     "recent_clinics", "recent_patients", "clinics_added", "patients_added", "bookings"}
+    missing = expected_keys - set(b.keys())
+    check("  metrics shape", 0 if missing else 200, 200, missing)
+    check("  trend has 30 points", 200 if len(b.get("trend_30d", [])) == 30 else 0, 200)
+
+s, b = req("GET", "/api/admin/metrics", token=admin_token)
+check("GET /api/admin/metrics (clinic admin -> 403)", s, 403, b)
+
 tenant_unique = str(int(time.time())) + "x"
 s, b = req("POST", "/api/admin/tenants", {
     "name": f"Test Clinic {tenant_unique}",
