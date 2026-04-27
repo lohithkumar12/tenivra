@@ -193,6 +193,7 @@ export default function HomePage() {
             <div>
               <h4 className="font-semibold text-sm uppercase tracking-wider text-slate-400 mb-4">Product</h4>
               <ul className="space-y-2 text-sm text-slate-300">
+                <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
                 <li><Link href="/signup" className="hover:text-white transition-colors">Sign Up Free</Link></li>
                 <li><Link href="/login" className="hover:text-white transition-colors">Sign In</Link></li>
                 <li><Link href="/clinic/sunrise-clinic" className="hover:text-white transition-colors">Live Demo</Link></li>
@@ -201,7 +202,11 @@ export default function HomePage() {
             <div>
               <h4 className="font-semibold text-sm uppercase tracking-wider text-slate-400 mb-4">Company</h4>
               <ul className="space-y-2 text-sm text-slate-300">
-                <li><a href="mailto:vemuboddupalli@gmail.com" className="hover:text-white transition-colors">Contact</a></li>
+                <li><Link href="/company" className="hover:text-white transition-colors">Company</Link></li>
+                <li><Link href="/contact" className="hover:text-white transition-colors">Contact Us</Link></li>
+                <li><Link href="/terms" className="hover:text-white transition-colors">Terms & Conditions</Link></li>
+                <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                <li><Link href="/refund-policy" className="hover:text-white transition-colors">Refund Policy</Link></li>
               </ul>
             </div>
           </div>
