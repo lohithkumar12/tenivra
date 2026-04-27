@@ -14,7 +14,7 @@ from app.schemas import (
     AppointmentCreate, AppointmentResponse, PublicClinicSummary,
     AssistantQuery, AssistantResponse,
 )
-from app.services.assistant import process_query
+from app.services.assistant_llm import assistant_reply
 from app.deps import get_optional_user
 
 router = APIRouter(prefix="/api/public", tags=["public"])
@@ -146,6 +146,11 @@ def book_appointment(
 def assistant_chat(slug: str, body: AssistantQuery, db: Session = Depends(get_db)):
     t = _active_tenant(slug, db)
 
+    rules_obj = db.query(AppointmentRule).filter(AppointmentRule.tenant_id == t.id).first()
+    rules_dict: dict = {}
+    if rules_obj:
+        rules_dict = AppointmentRuleResponse.model_validate(rules_obj).model_dump()
+
     clinic_data = {
         "profile": TenantResponse.model_validate(t).model_dump(),
         "doctors": [DoctorResponse.model_validate(d).model_dump()
@@ -156,5 +161,7 @@ def assistant_chat(slug: str, body: AssistantQuery, db: Session = Depends(get_db
                   for f in db.query(FAQ).filter(FAQ.tenant_id == t.id, FAQ.is_active.is_(True)).all()],
         "timings": [ClinicTimingResponse.model_validate(ct).model_dump()
                      for ct in db.query(ClinicTiming).filter(ClinicTiming.tenant_id == t.id).all()],
+        "appointment_rules": rules_dict,
     }
-    return process_query(body.message, clinic_data)
+    hist = [h.model_dump() for h in body.history]
+    return assistant_reply(slug, body.message, hist, clinic_data)

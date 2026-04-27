@@ -25,3 +25,4 @@ services:
         value: https://frontend-mu-three-62.vercel.app,https://frontend-vemuboddupalli-7387s-projects.vercel.app
       - key: PYTHON_VERSION
         value: 3.12.8
+      # Add OPENAI_API_KEY in Render Dashboard → Environment (patient AI assistant); optional ASSISTANT_MODEL=gpt-4o-mini

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 from typing import Optional
 
@@ -461,8 +461,14 @@ class AppointmentResponse(BaseModel):
 
 # ── Assistant ────────────────────────────────────────────────────────────
 
+class AssistantHistoryTurn(BaseModel):
+    role: str  # "user" | "assistant"
+    content: str
+
+
 class AssistantQuery(BaseModel):
     message: str
+    history: list[AssistantHistoryTurn] = Field(default_factory=list)
 
 
 class AssistantResponse(BaseModel):

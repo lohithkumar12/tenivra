@@ -70,4 +70,5 @@ export const Events = {
   LoginCompleted: "login_completed",
   BookingStarted: "booking_started",
   BookingCompleted: "booking_completed",
+  AssistantMessage: "assistant_message",
 } as const;
