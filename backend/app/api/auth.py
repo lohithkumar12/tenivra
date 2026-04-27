@@ -1,6 +1,6 @@
 import re
 import secrets
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timedelta, timezone
@@ -16,6 +16,7 @@ from app.schemas import (
 )
 from app.deps import get_current_user
 from app.services.notifications import send_password_reset_email
+from app.rate_limit import limiter
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -32,7 +33,8 @@ def slugify(text: str) -> str:
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(body: LoginRequest, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def login(request: Request, body: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == body.email).first()
     if not user or not bcrypt.checkpw(body.password.encode(), user.hashed_password.encode()):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
@@ -42,7 +44,8 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/signup", response_model=TokenResponse, status_code=201)
-def signup(body: ClinicSignupRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def signup(request: Request, body: ClinicSignupRequest, db: Session = Depends(get_db)):
     if len(body.admin_password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
     if db.query(User).filter(User.email == body.admin_email).first():
@@ -79,7 +82,8 @@ def signup(body: ClinicSignupRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/patient/signup", response_model=TokenResponse, status_code=201)
-def patient_signup(body: PatientSignupRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def patient_signup(request: Request, body: PatientSignupRequest, db: Session = Depends(get_db)):
     if len(body.password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
     if db.query(User).filter(User.email == body.email).first():
@@ -105,7 +109,8 @@ def me(user: User = Depends(get_current_user)):
 
 
 @router.post("/forgot-password")
-def forgot_password(body: ForgotPasswordRequest, db: Session = Depends(get_db)):
+@limiter.limit("3/minute")
+def forgot_password(request: Request, body: ForgotPasswordRequest, db: Session = Depends(get_db)):
     email = body.email.strip().lower()
     user = db.query(User).filter(func.lower(User.email) == email).first()
     if user:
@@ -120,7 +125,8 @@ def forgot_password(body: ForgotPasswordRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/reset-password")
-def reset_password(body: ResetPasswordRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def reset_password(request: Request, body: ResetPasswordRequest, db: Session = Depends(get_db)):
     if len(body.new_password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
     user = db.query(User).filter(User.password_reset_token == body.token).first()

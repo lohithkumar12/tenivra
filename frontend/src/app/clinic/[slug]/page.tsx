@@ -24,7 +24,11 @@ export default function ClinicHome() {
   }, [slug]);
 
   if (loading) return <Spinner />;
-  if (!profile) return null;
+  if (!profile) return (
+    <div className="text-center py-16">
+      <p className="text-slate-500 text-lg">Clinic information is not available right now.</p>
+    </div>
+  );
 
   return (
     <div className="space-y-8 animate-fade-in">

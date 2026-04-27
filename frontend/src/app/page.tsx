@@ -19,10 +19,10 @@ const STEPS = [
 ];
 
 const STATS = [
-  { value: 500, suffix: "+", label: "Appointments Handled" },
-  { value: 50, suffix: "+", label: "Clinics Onboarded" },
-  { value: 98, suffix: "%", label: "Uptime Guaranteed" },
-  { value: 10, suffix: "min", label: "Setup Time" },
+  { value: 60, suffix: "s", label: "Setup Time" },
+  { value: 0, suffix: "", label: "Hidden Fees", display: "Free" },
+  { value: 24, suffix: "/7", label: "AI Assistant" },
+  { value: 100, suffix: "%", label: "Your Data, Your Clinic" },
 ];
 
 export default function HomePage() {
@@ -94,7 +94,7 @@ export default function HomePage() {
           {STATS.map(s => (
             <div key={s.label} className="glass-light rounded-2xl p-6 text-center">
               <p className="text-3xl sm:text-4xl font-extrabold text-brand-600">
-                <AnimatedCounter value={s.value} suffix={s.suffix} />
+                {"display" in s && s.display ? s.display : <AnimatedCounter value={s.value} suffix={s.suffix} />}
               </p>
               <p className="text-sm text-slate-500 mt-1 font-medium">{s.label}</p>
             </div>
@@ -165,7 +165,7 @@ export default function HomePage() {
                 Ready to Automate Your Clinic?
               </h2>
               <p className="text-brand-200 text-lg mb-8 max-w-lg mx-auto">
-                Join clinics already using Tenivra to handle patient queries and bookings automatically.
+                Set up your clinic in 60 seconds. Let patients book, ask questions, and get instant answers — all automated.
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-4">
                 <Link href="/signup">

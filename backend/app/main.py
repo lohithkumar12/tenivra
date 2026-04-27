@@ -1,11 +1,14 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import inspect, text
+from slowapi.errors import RateLimitExceeded
 
 from app.config import get_settings
 from app.database import engine, Base, SessionLocal
 from app.api import api_router
+from app.rate_limit import limiter
 
 
 def _ensure_columns():
@@ -65,6 +68,15 @@ app = FastAPI(
     description="Multi-tenant clinic management platform",
     lifespan=lifespan,
 )
+
+app.state.limiter = limiter
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Too many requests. Please try again shortly."},
+    )
 
 app.add_middleware(
     CORSMiddleware,

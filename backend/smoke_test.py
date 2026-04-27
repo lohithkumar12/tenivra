@@ -13,12 +13,16 @@ BASE = "http://127.0.0.1:8000"
 
 
 def smoke_booking_monday(slot=0):
-    """Next Monday — smoke bulk timings only Mon open. slot + time spread avoids 409 on re-runs."""
-    base_days = 10 + slot * 14 + (int(time.time()) % 21)
-    d = datetime.now() + timedelta(days=base_days)
+    """Returns a future Monday (within 28 days) + a unique-ish HH:MM to avoid 409 on re-runs."""
+    epoch_min = int(time.time() // 60)
+    d = datetime.now() + timedelta(days=2 + slot * 7)
     while d.weekday() != 0:
         d += timedelta(days=1)
-    return d.strftime("%Y-%m-%d")
+    if (d - datetime.now()).days > 28:
+        d -= timedelta(weeks=1)
+    hour = 9 + (epoch_min + slot * 3) % 8
+    minute = (epoch_min * 7 + slot * 13) % 60
+    return d.strftime("%Y-%m-%d"), f"{hour:02d}:{minute:02d}"
 PASS = 0
 FAIL = 0
 ERRORS = []
@@ -361,14 +365,14 @@ check("GET /api/public/:slug/appointment-rules", s, 200, b)
 if pub_services:
     svc_id = pub_services[0]["id"]
     doc_id = pub_doctors[0]["id"] if pub_doctors else None
-    d_guest = smoke_booking_monday(0)
+    d_guest, t_guest = smoke_booking_monday(0)
     appt_body = {
         "patient_name": "Smoke Test Patient",
         "patient_phone": "9999999999",
         "patient_email": "smoke@test.com",
         "service_id": svc_id,
         "preferred_date": d_guest,
-        "preferred_time": "10:15",
+        "preferred_time": t_guest,
         "notes": "Smoke test appointment",
     }
     if doc_id:
@@ -419,14 +423,14 @@ check("GET /api/patient/appointments (empty)", s, 200, b)
 
 # Book as authenticated patient → should attach patient_user_id
 if pub_services:
-    d_pat = smoke_booking_monday(1)
+    d_pat, t_pat = smoke_booking_monday(1)
     appt_body = {
         "patient_name": "Smoke Patient",
         "patient_phone": "9000000000",
         "patient_email": f"smokepatient{puniq}@example.com",
         "service_id": pub_services[0]["id"],
         "preferred_date": d_pat,
-        "preferred_time": "15:00",
+        "preferred_time": t_pat,
         "notes": "Booked while logged in",
     }
     s, b = req("POST", f"/api/public/{SLUG}/appointments", appt_body, token=patient_token)

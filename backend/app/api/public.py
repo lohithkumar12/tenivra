@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import or_, func
 from sqlalchemy.orm import Session
 
@@ -19,6 +19,7 @@ from app.schemas import (
 )
 from app.services.assistant_llm import assistant_reply
 from app.deps import get_optional_user
+from app.rate_limit import limiter
 
 router = APIRouter(prefix="/api/public", tags=["public"])
 
@@ -105,7 +106,9 @@ def public_rules(slug: str, db: Session = Depends(get_db)):
 
 
 @router.post("/{slug}/appointments", response_model=AppointmentResponse, status_code=201)
+@limiter.limit("10/minute")
 def book_appointment(
+    request: Request,
     slug: str,
     body: AppointmentCreate,
     db: Session = Depends(get_db),
@@ -169,7 +172,8 @@ def book_appointment(
 
 
 @router.post("/{slug}/assistant", response_model=AssistantResponse)
-def assistant_chat(slug: str, body: AssistantQuery, db: Session = Depends(get_db)):
+@limiter.limit("15/minute")
+def assistant_chat(request: Request, slug: str, body: AssistantQuery, db: Session = Depends(get_db)):
     t = _active_tenant(slug, db)
 
     rules_obj = db.query(AppointmentRule).filter(AppointmentRule.tenant_id == t.id).first()

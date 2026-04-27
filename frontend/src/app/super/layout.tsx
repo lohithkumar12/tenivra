@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { Spinner } from "@/components/ui";
@@ -15,50 +16,80 @@ export default function SuperLayout({ children }: { children: ReactNode }) {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
   const path = usePathname();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (loading) return <Spinner />;
   if (!user || user.role !== "super_admin") { router.push("/login"); return null; }
 
+  const sidebar = (
+    <>
+      <div className="p-5">
+        <Link href="/" className="text-lg font-bold text-white">Tenivra</Link>
+        <p className="text-xs text-slate-400 mt-0.5">Platform Admin</p>
+      </div>
+      <nav className="flex-1 px-3 space-y-0.5">
+        {NAV.map(n => {
+          const active = path === n.href;
+          return (
+            <Link key={n.href} href={n.href} onClick={() => setSidebarOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
+                active
+                  ? "bg-brand-600/20 text-brand-300 font-semibold border-l-2 border-brand-400"
+                  : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+              }`}>
+              <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2 : 1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d={n.icon} />
+              </svg>
+              {n.label}
+            </Link>
+          );
+        })}
+      </nav>
+      <div className="p-4 border-t border-white/10">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-9 h-9 rounded-xl bg-violet-600/30 flex items-center justify-center text-violet-300 text-sm font-bold">
+            {user.full_name?.charAt(0) || "S"}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm text-white font-medium truncate">{user.full_name}</p>
+            <p className="text-xs text-slate-500 truncate">{user.email}</p>
+          </div>
+        </div>
+        <button onClick={() => { logout(); router.push("/login"); }}
+          className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-xl transition-colors">Sign out</button>
+      </div>
+    </>
+  );
+
   return (
     <div className="flex min-h-screen">
-      <aside className="w-60 bg-surface-900 flex flex-col shrink-0">
-        <div className="p-5">
-          <Link href="/" className="text-lg font-bold text-white">Tenivra</Link>
-          <p className="text-xs text-slate-400 mt-0.5">Platform Admin</p>
-        </div>
-        <nav className="flex-1 px-3 space-y-0.5">
-          {NAV.map(n => {
-            const active = path === n.href;
-            return (
-              <Link key={n.href} href={n.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
-                  active
-                    ? "bg-brand-600/20 text-brand-300 font-semibold border-l-2 border-brand-400"
-                    : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
-                }`}>
-                <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2 : 1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d={n.icon} />
-                </svg>
-                {n.label}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="p-4 border-t border-white/10">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-xl bg-violet-600/30 flex items-center justify-center text-violet-300 text-sm font-bold">
-              {user.full_name?.charAt(0) || "S"}
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm text-white font-medium truncate">{user.full_name}</p>
-              <p className="text-xs text-slate-500 truncate">{user.email}</p>
-            </div>
-          </div>
-          <button onClick={() => { logout(); router.push("/login"); }}
-            className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-xl transition-colors">Sign out</button>
-        </div>
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex w-60 bg-surface-900 flex-col shrink-0">
+        {sidebar}
       </aside>
-      <main className="flex-1 p-8 overflow-y-auto bg-slate-50">{children}</main>
+
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
+          <aside className="relative w-60 bg-surface-900 flex flex-col h-full z-50">
+            {sidebar}
+          </aside>
+        </div>
+      )}
+
+      <div className="flex-1 flex flex-col overflow-y-auto bg-slate-50">
+        {/* Mobile header */}
+        <div className="md:hidden flex items-center gap-3 px-4 py-3 bg-surface-900 border-b border-white/10">
+          <button onClick={() => setSidebarOpen(true)} className="text-white p-1">
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <span className="text-white font-bold text-sm">Tenivra Admin</span>
+        </div>
+        <main className="flex-1 p-4 md:p-8">{children}</main>
+      </div>
     </div>
   );
 }
