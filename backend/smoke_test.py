@@ -123,15 +123,44 @@ print("\n-- Super Admin: Metrics --")
 s, b = req("GET", "/api/admin/metrics", token=super_token)
 check("GET /api/admin/metrics", s, 200, b)
 if s == 200 and isinstance(b, dict):
-    expected_keys = {"total_clinics", "active_clinics", "total_patients", "total_bookings",
-                     "pending_bookings", "trend_30d", "top_clinics", "at_risk_clinics",
-                     "recent_clinics", "recent_patients", "clinics_added", "patients_added", "bookings"}
+    expected_keys = {"days_window", "total_clinics", "active_clinics", "total_patients",
+                     "total_bookings", "pending_bookings", "trend", "top_clinics",
+                     "at_risk_clinics", "recent_clinics", "recent_patients", "clinics_added",
+                     "patients_added", "bookings", "funnel", "cohorts", "cities", "revenue"}
     missing = expected_keys - set(b.keys())
     check("  metrics shape", 0 if missing else 200, 200, missing)
-    check("  trend has 30 points", 200 if len(b.get("trend_30d", [])) == 30 else 0, 200)
+    check("  trend has 30 points (default)", 200 if len(b.get("trend", [])) == 30 else 0, 200)
+    check("  funnel has 4 stages", 200 if len(b.get("funnel", [])) == 4 else 0, 200)
+    rev = b.get("revenue", {}) or {}
+    rev_keys = {"mrr_cents", "paying_clinics", "trial_clinics", "arpa_cents"}
+    check("  revenue shape", 0 if (rev_keys - set(rev.keys())) else 200, 200)
+
+s, b = req("GET", "/api/admin/metrics?days=7", token=super_token)
+check("GET /api/admin/metrics?days=7", s, 200, b)
+if s == 200 and isinstance(b, dict):
+    check("  ?days=7 returns 7 trend points", 200 if len(b.get("trend", [])) == 7 else 0, 200)
 
 s, b = req("GET", "/api/admin/metrics", token=admin_token)
 check("GET /api/admin/metrics (clinic admin -> 403)", s, 403, b)
+
+# Per-clinic insights
+if tenant_count > 0:
+    tenants_resp = req("GET", "/api/admin/tenants", token=super_token)[1]
+    if isinstance(tenants_resp, list) and tenants_resp:
+        first_tid = tenants_resp[0]["id"]
+        s, b = req("GET", f"/api/admin/clinics/{first_tid}/insights?days=30", token=super_token)
+        check("GET /api/admin/clinics/:id/insights", s, 200, b)
+        if s == 200 and isinstance(b, dict):
+            insight_keys = {"id", "name", "slug", "plan", "subscription_status",
+                            "monthly_price_cents", "trend", "top_services", "top_doctors"}
+            check("  insights shape", 0 if (insight_keys - set(b.keys())) else 200, 200)
+
+# Email digest preview
+s, b = req("GET", "/api/admin/digest/preview?period=weekly", token=super_token)
+check("GET /api/admin/digest/preview?period=weekly", s, 200, b)
+if s == 200 and isinstance(b, dict):
+    digest_keys = {"subject", "period_label", "summary_lines", "body_html", "body_text"}
+    check("  digest shape", 0 if (digest_keys - set(b.keys())) else 200, 200)
 
 tenant_unique = str(int(time.time())) + "x"
 s, b = req("POST", "/api/admin/tenants", {

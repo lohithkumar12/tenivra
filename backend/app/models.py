@@ -16,6 +16,28 @@ class UserRole(str, enum.Enum):
     PATIENT = "patient"
 
 
+class TenantPlan(str, enum.Enum):
+    FREE = "free"
+    STARTER = "starter"
+    PRO = "pro"
+    ENTERPRISE = "enterprise"
+
+
+class SubscriptionStatus(str, enum.Enum):
+    TRIAL = "trial"
+    ACTIVE = "active"
+    PAST_DUE = "past_due"
+    CANCELLED = "cancelled"
+
+
+PLAN_DEFAULT_PRICE_CENTS = {
+    TenantPlan.FREE.value: 0,
+    TenantPlan.STARTER.value: 99900,    # ₹999/mo
+    TenantPlan.PRO.value: 299900,       # ₹2999/mo
+    TenantPlan.ENTERPRISE.value: 999900,
+}
+
+
 class AppointmentStatus(str, enum.Enum):
     PENDING = "pending"
     CONFIRMED = "confirmed"
@@ -43,11 +65,17 @@ class Tenant(Base):
     slug = Column(String(255), unique=True, nullable=False, index=True)
     logo_url = Column(String(500))
     address = Column(Text)
+    city = Column(String(100), index=True)
     phone = Column(String(20))
     email = Column(String(255))
     description = Column(Text)
     specializations = Column(JSON, default=list)
     is_active = Column(Boolean, default=True)
+    plan = Column(String(20), default=TenantPlan.FREE.value, nullable=False)
+    monthly_price_cents = Column(Integer, default=0, nullable=False)
+    subscription_status = Column(String(20), default=SubscriptionStatus.TRIAL.value, nullable=False)
+    stripe_customer_id = Column(String(120))
+    stripe_subscription_id = Column(String(120))
     created_at = Column(DateTime(timezone=True), default=_now)
     updated_at = Column(DateTime(timezone=True), default=_now, onupdate=_now)
 

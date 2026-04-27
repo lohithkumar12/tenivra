@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { track, Events } from "@/lib/analytics";
 import { Button, Card, Input, Textarea, Select, Spinner } from "@/components/ui";
 
 interface Svc { id: string; name: string; fee: number; }
@@ -28,6 +29,7 @@ export default function BookPage() {
   });
 
   useEffect(() => {
+    track(Events.BookingStarted, { slug });
     Promise.all([
       api.get<Svc[]>(`/api/public/${slug}/services`),
       api.get<Doc[]>(`/api/public/${slug}/doctors`),
@@ -61,6 +63,7 @@ export default function BookPage() {
         },
         isPatient ? token ?? undefined : undefined,
       );
+      track(Events.BookingCompleted, { slug, status: res.status, authenticated: isPatient });
       const dest = isPatient
         ? "/patient/bookings"
         : `/clinic/${slug}/book/success?status=${res.status}`;

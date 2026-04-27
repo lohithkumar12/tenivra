@@ -1,0 +1,14 @@
+feat(dashboard): full CEO cockpit upgrade - date range, drill-down, funnel, cohorts, MRR, geo, analytics, digest
+
+Adds eight upgrades to the founder dashboard:
+
+1. Date range picker (7d / 30d / 90d / 1y) - ?days= param drives trend + top clinics window. WoW deltas remain comparable.
+2. Per-clinic drill-down (/super/clinics/[id]) - booking trend, top services, top doctors, plan editor. Power Users / At-Risk / Recent rows now click straight into the drill-down.
+3. Activation funnel - Signed up -> Added a doctor -> First booking -> 5+ bookings, derived from existing data, no analytics needed.
+4. Cohort retention - six weekly cohorts, % of cohort booking each week from signup. Renders sparse with low data and grows naturally.
+5. Geographic insight - adds city column to tenants (idempotent migration), ranks top cities by clinic count.
+6. Plans + MRR (Stripe-ready) - adds plan, monthly_price_cents, subscription_status, stripe_customer_id, stripe_subscription_id columns plus per-clinic plan editor and live MRR / ARPA / paying / trial KPIs. Sunrise Clinic seeds onto the Starter plan so the dashboard is not all zeros.
+7. PostHog analytics - env-flag activation via NEXT_PUBLIC_POSTHOG_KEY, identifies users on login and tracks login, signup (clinic + patient), booking_started, booking_completed. Safe no-op without a key.
+8. Email digest preview - GET /api/admin/digest/preview?period=daily|weekly returns subject + HTML/text bodies; Preview Digest modal on the dashboard renders them with copy-to-clipboard. Ready to wire to SMTP/Resend.
+
+Smoke test expanded to 75 checks (date range, per-clinic insights, digest shape) - all green. Frontend production build clean.

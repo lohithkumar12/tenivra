@@ -19,10 +19,18 @@ def _ensure_columns():
         with engine.begin() as conn:
             conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {ddl}"))
 
-    if "users" in inspector.get_table_names():
+    tables = inspector.get_table_names()
+    if "users" in tables:
         add("users", "phone", "VARCHAR(20)")
-    if "appointments" in inspector.get_table_names():
+    if "appointments" in tables:
         add("appointments", "patient_user_id", "VARCHAR(36)")
+    if "tenants" in tables:
+        add("tenants", "city", "VARCHAR(100)")
+        add("tenants", "plan", "VARCHAR(20) DEFAULT 'free' NOT NULL")
+        add("tenants", "monthly_price_cents", "INTEGER DEFAULT 0 NOT NULL")
+        add("tenants", "subscription_status", "VARCHAR(20) DEFAULT 'trial' NOT NULL")
+        add("tenants", "stripe_customer_id", "VARCHAR(120)")
+        add("tenants", "stripe_subscription_id", "VARCHAR(120)")
 
 
 @asynccontextmanager

@@ -85,9 +85,13 @@ class TenantUpdate(BaseModel):
     email: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
+    city: Optional[str] = None
     description: Optional[str] = None
     specializations: Optional[list[str]] = None
     is_active: Optional[bool] = None
+    plan: Optional[str] = None
+    monthly_price_cents: Optional[int] = None
+    subscription_status: Optional[str] = None
 
 
 class TenantResponse(BaseModel):
@@ -97,11 +101,15 @@ class TenantResponse(BaseModel):
     slug: str
     logo_url: Optional[str] = None
     address: Optional[str] = None
+    city: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[str] = None
     description: Optional[str] = None
     specializations: list[str] = []
     is_active: bool
+    plan: str = "free"
+    monthly_price_cents: int = 0
+    subscription_status: str = "trial"
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -160,7 +168,33 @@ class RecentPatient(BaseModel):
     signed_up_at: datetime
 
 
+class FunnelStage(BaseModel):
+    label: str
+    count: int
+    pct_of_top: float
+
+
+class CohortRow(BaseModel):
+    cohort_label: str  # e.g. "Mar 31"
+    cohort_size: int
+    weeks: list[Optional[float]]  # retention % per week-from-signup, None = future
+
+
+class CityStat(BaseModel):
+    city: str
+    clinic_count: int
+    patient_count: int
+
+
+class RevenueMetrics(BaseModel):
+    mrr_cents: int
+    paying_clinics: int
+    trial_clinics: int
+    arpa_cents: int  # average revenue per active clinic
+
+
 class PlatformMetrics(BaseModel):
+    days_window: int
     total_clinics: int
     active_clinics: int
     total_patients: int
@@ -170,11 +204,56 @@ class PlatformMetrics(BaseModel):
     clinics_added: MetricDelta
     patients_added: MetricDelta
     bookings: MetricDelta
-    trend_30d: list[TrendPoint]
+    trend: list[TrendPoint]
     top_clinics: list[TopClinic]
     at_risk_clinics: list[AtRiskClinic]
     recent_clinics: list[RecentClinic]
     recent_patients: list[RecentPatient]
+    funnel: list[FunnelStage]
+    cohorts: list[CohortRow]
+    cities: list[CityStat]
+    revenue: RevenueMetrics
+
+
+# ── Per-clinic insights ──────────────────────────────────────────────────
+
+class ClinicInsightsTop(BaseModel):
+    name: str
+    count: int
+
+
+class ClinicInsights(BaseModel):
+    id: str
+    name: str
+    slug: str
+    city: Optional[str] = None
+    plan: str
+    subscription_status: str
+    monthly_price_cents: int
+    signed_up_at: datetime
+    days_active: int
+    total_bookings: int
+    bookings_last_window: int
+    pending_bookings: int
+    completed_bookings: int
+    doctors_count: int
+    services_count: int
+    last_booking_at: Optional[datetime] = None
+    trend: list[TrendPoint]
+    top_services: list[ClinicInsightsTop]
+    top_doctors: list[ClinicInsightsTop]
+    admin_email: Optional[str] = None
+
+
+# ── Email digest ─────────────────────────────────────────────────────────
+
+class DigestPreview(BaseModel):
+    subject: str
+    period_label: str
+    summary_lines: list[str]
+    body_html: str
+    body_text: str
+    generated_at: datetime
 
 
 # ── Clinic profile ───────────────────────────────────────────────────────

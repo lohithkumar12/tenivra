@@ -4,31 +4,41 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
+import { isAnalyticsEnabled } from "@/lib/analytics";
 import { Badge, Button, Card, EmptyState, Spinner } from "@/components/ui";
 
+// ── Types ───────────────────────────────────────────────────────────────
 interface MetricDelta { current: number; previous: number; }
 interface TrendPoint { date: string; clinics: number; patients: number; bookings: number; }
 interface TopClinic { id: string; name: string; slug: string; booking_count: number; last_booking_at: string | null; }
 interface AtRiskClinic { id: string; name: string; slug: string; signed_up_at: string; days_since_signup: number; admin_email?: string | null; }
 interface RecentClinic { id: string; name: string; slug: string; signed_up_at: string; }
 interface RecentPatient { id: string; full_name: string; email: string; signed_up_at: string; }
+interface FunnelStage { label: string; count: number; pct_of_top: number; }
+interface CohortRow { cohort_label: string; cohort_size: number; weeks: (number | null)[]; }
+interface CityStat { city: string; clinic_count: number; patient_count: number; }
+interface RevenueMetrics { mrr_cents: number; paying_clinics: number; trial_clinics: number; arpa_cents: number; }
+interface DigestPreview { subject: string; period_label: string; summary_lines: string[]; body_html: string; body_text: string; generated_at: string; }
 interface Metrics {
-  total_clinics: number;
-  active_clinics: number;
-  total_patients: number;
-  total_bookings: number;
-  pending_bookings: number;
+  days_window: number;
+  total_clinics: number; active_clinics: number; total_patients: number;
+  total_bookings: number; pending_bookings: number;
   avg_bookings_per_active_clinic: number;
   clinics_added: MetricDelta;
   patients_added: MetricDelta;
   bookings: MetricDelta;
-  trend_30d: TrendPoint[];
+  trend: TrendPoint[];
   top_clinics: TopClinic[];
   at_risk_clinics: AtRiskClinic[];
   recent_clinics: RecentClinic[];
   recent_patients: RecentPatient[];
+  funnel: FunnelStage[];
+  cohorts: CohortRow[];
+  cities: CityStat[];
+  revenue: RevenueMetrics;
 }
 
+// ── Helpers ─────────────────────────────────────────────────────────────
 function deltaPct(d: MetricDelta): { pct: number | null; up: boolean } {
   if (d.previous === 0) return { pct: d.current > 0 ? null : 0, up: d.current >= 0 };
   const pct = Math.round(((d.current - d.previous) / d.previous) * 100);
@@ -46,6 +56,14 @@ function relativeTime(iso: string): string {
   return d.toLocaleDateString();
 }
 
+function formatINR(cents: number): string {
+  const rupees = cents / 100;
+  if (rupees >= 100000) return `₹${(rupees / 100000).toFixed(1)}L`;
+  if (rupees >= 1000) return `₹${(rupees / 1000).toFixed(1)}k`;
+  return `₹${rupees.toFixed(0)}`;
+}
+
+// ── Reusable widgets ────────────────────────────────────────────────────
 function StatCard({
   label, value, delta, hint, accent,
 }: {
@@ -148,24 +166,200 @@ function TrendChart({ data }: { data: TrendPoint[] }) {
   );
 }
 
+function FunnelWidget({ stages }: { stages: FunnelStage[] }) {
+  const colors = ["from-brand-500 to-brand-700", "from-violet-500 to-purple-700", "from-emerald-500 to-teal-600", "from-amber-500 to-orange-600"];
+  const top = stages[0]?.count || 1;
+  return (
+    <div className="space-y-3">
+      {stages.map((s, i) => {
+        const conv = i === 0 ? 100 : Math.round((s.count / top) * 100);
+        const fromPrev = i === 0 ? null : (stages[i - 1].count > 0 ? Math.round((s.count / stages[i - 1].count) * 100) : 0);
+        return (
+          <div key={s.label}>
+            <div className="flex items-baseline justify-between mb-1.5">
+              <span className="text-sm font-medium text-slate-700">{s.label}</span>
+              <span className="text-sm tabular-nums">
+                <span className="font-bold text-slate-900">{s.count}</span>
+                <span className="text-slate-400 ml-2 text-xs">{conv}% of top{fromPrev !== null && ` · ${fromPrev}% from prev`}</span>
+              </span>
+            </div>
+            <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className={`h-full bg-gradient-to-r ${colors[i % colors.length]} rounded-full transition-all duration-500`}
+                style={{ width: `${Math.max(2, conv)}%` }}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function CohortHeatmap({ rows }: { rows: CohortRow[] }) {
+  const weeks = rows[0]?.weeks.length || 6;
+  const cellColor = (v: number | null) => {
+    if (v === null) return "bg-slate-50 text-slate-300";
+    if (v === 0) return "bg-slate-100 text-slate-400";
+    if (v < 25) return "bg-brand-100 text-brand-700";
+    if (v < 50) return "bg-brand-300 text-brand-900";
+    if (v < 75) return "bg-brand-500 text-white";
+    return "bg-brand-700 text-white";
+  };
+  return (
+    <div className="overflow-x-auto -mx-2 px-2">
+      <table className="w-full text-xs border-separate" style={{ borderSpacing: "4px" }}>
+        <thead>
+          <tr>
+            <th className="text-left font-semibold text-slate-500 pr-2">Cohort</th>
+            <th className="text-left font-semibold text-slate-500 pr-2">Size</th>
+            {Array.from({ length: weeks }).map((_, i) => (
+              <th key={i} className="font-semibold text-slate-500 text-center">W{i}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={i}>
+              <td className="font-medium text-slate-700 pr-2 whitespace-nowrap">{r.cohort_label}</td>
+              <td className="text-slate-500 pr-2">{r.cohort_size}</td>
+              {r.weeks.map((v, j) => (
+                <td key={j} className={`text-center font-semibold rounded ${cellColor(v)}`}
+                    style={{ minWidth: 36, height: 28 }}>
+                  {v === null ? "" : v === 0 ? "—" : `${v}%`}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="text-[11px] text-slate-400 mt-2">% of cohort with at least one booking that week. Darker = more retention.</p>
+    </div>
+  );
+}
+
+function CitiesWidget({ cities }: { cities: CityStat[] }) {
+  const max = Math.max(1, ...cities.map(c => c.clinic_count));
+  if (cities.length === 0) {
+    return <p className="text-sm text-slate-400 py-4 text-center">No city data yet.</p>;
+  }
+  return (
+    <ul className="space-y-2">
+      {cities.map(c => (
+        <li key={c.city} className="flex items-center gap-3">
+          <span className="w-24 text-sm font-medium text-slate-700 truncate">{c.city}</span>
+          <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-brand-500 to-accent-500 rounded-full"
+              style={{ width: `${(c.clinic_count / max) * 100}%` }}
+            />
+          </div>
+          <span className="text-sm tabular-nums text-slate-600 w-20 text-right">
+            <span className="font-bold">{c.clinic_count}</span>
+            <span className="text-xs text-slate-400 ml-1">clinic{c.clinic_count !== 1 ? "s" : ""}</span>
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function DigestModal({ onClose, token }: { onClose: () => void; token: string }) {
+  const [period, setPeriod] = useState<"daily" | "weekly">("weekly");
+  const [data, setData] = useState<DigestPreview | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    api.get<DigestPreview>(`/api/admin/digest/preview?period=${period}`, token)
+      .then(setData)
+      .finally(() => setLoading(false));
+  }, [period, token]);
+
+  const copy = async () => {
+    if (!data) return;
+    await navigator.clipboard.writeText(`${data.subject}\n\n${data.body_text}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="p-5 border-b flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800">Email digest preview</h3>
+            <p className="text-sm text-slate-500">What your daily/weekly summary email looks like</p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPeriod("daily")}
+              className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition ${period === "daily" ? "bg-brand-100 text-brand-700" : "text-slate-500 hover:bg-slate-100"}`}>
+              Daily
+            </button>
+            <button
+              onClick={() => setPeriod("weekly")}
+              className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition ${period === "weekly" ? "bg-brand-100 text-brand-700" : "text-slate-500 hover:bg-slate-100"}`}>
+              Weekly
+            </button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto p-5">
+          {loading || !data ? <Spinner /> : (
+            <div>
+              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Subject</div>
+              <div className="text-sm font-bold text-slate-800 mb-4 p-3 bg-slate-50 rounded-lg">{data.subject}</div>
+              <div className="border rounded-xl overflow-hidden bg-slate-50">
+                <div dangerouslySetInnerHTML={{ __html: data.body_html }} />
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="p-4 border-t bg-slate-50 flex items-center justify-between text-xs">
+          <p className="text-slate-500">
+            To enable real delivery, set <code className="bg-white px-1.5 py-0.5 rounded">SMTP_*</code> env vars and run a daily/weekly cron hitting this endpoint.
+          </p>
+          <div className="flex gap-2">
+            <Button size="sm" variant="secondary" onClick={copy}>{copied ? "Copied!" : "Copy plain text"}</Button>
+            <Button size="sm" variant="secondary" onClick={onClose}>Close</Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main page ───────────────────────────────────────────────────────────
+const RANGE_OPTIONS = [
+  { v: 7, label: "Last 7 days" },
+  { v: 30, label: "Last 30 days" },
+  { v: 90, label: "Last 90 days" },
+  { v: 365, label: "Last year" },
+];
+
 export default function SuperDashboard() {
   const { token } = useAuth();
+  const [days, setDays] = useState(30);
   const [m, setM] = useState<Metrics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showDigest, setShowDigest] = useState(false);
 
   useEffect(() => {
     if (!token) return;
-    api.get<Metrics>("/api/admin/metrics", token)
+    setLoading(true);
+    api.get<Metrics>(`/api/admin/metrics?days=${days}`, token)
       .then(setM)
       .finally(() => setLoading(false));
-  }, [token]);
+  }, [token, days]);
 
-  if (loading) return <Spinner />;
+  if (loading && !m) return <Spinner />;
   if (!m) return <EmptyState message="Failed to load metrics" />;
 
-  const totalEvents30d = m.trend_30d.reduce(
+  const totalEvents = m.trend.reduce(
     (acc, d) => acc + d.clinics + d.patients + d.bookings, 0,
   );
+  const analyticsOn = isAnalyticsEnabled();
 
   return (
     <div className="animate-fade-in space-y-8">
@@ -177,23 +371,55 @@ export default function SuperDashboard() {
           <div>
             <p className="text-violet-200 text-sm font-medium">Founder Dashboard</p>
             <h1 className="text-3xl font-extrabold mt-1">How is Tenivra doing today?</h1>
-            <p className="text-violet-200 mt-1">{m.total_clinics} clinics &middot; {m.total_patients} patients &middot; {m.total_bookings} bookings to date.</p>
+            <p className="text-violet-200 mt-1">{m.total_clinics} clinics · {m.total_patients} patients · {m.total_bookings} bookings to date.</p>
           </div>
-          <Link href="/super/clinics">
-            <Button variant="secondary" size="md" className="bg-white/15 border-white/20 text-white hover:bg-white/25 backdrop-blur">
-              Manage Clinics
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={days}
+              onChange={e => setDays(Number(e.target.value))}
+              className="bg-white/15 border border-white/20 backdrop-blur text-white text-sm font-semibold px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/40"
+            >
+              {RANGE_OPTIONS.map(o => (
+                <option key={o.v} value={o.v} className="text-slate-900">{o.label}</option>
+              ))}
+            </select>
+            <Button variant="secondary" size="md" className="bg-white/15 border-white/20 text-white hover:bg-white/25 backdrop-blur" onClick={() => setShowDigest(true)}>
+              Preview Digest
             </Button>
-          </Link>
+            <Link href="/super/clinics">
+              <Button variant="secondary" size="md" className="bg-white/15 border-white/20 text-white hover:bg-white/25 backdrop-blur">
+                Manage Clinics
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 
-      {/* KPI cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      {/* Integration status strip */}
+      <div className="flex flex-wrap gap-2 text-xs">
+        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-semibold ${analyticsOn ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${analyticsOn ? "bg-emerald-500" : "bg-slate-400"}`} />
+          PostHog: {analyticsOn ? "Live" : "Add NEXT_PUBLIC_POSTHOG_KEY to enable"}
+        </span>
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-semibold bg-slate-100 text-slate-500">
+          <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+          Stripe: not configured (plans tracked manually for now)
+        </span>
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-semibold bg-slate-100 text-slate-500">
+          <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+          Email: preview only (no SMTP set)
+        </span>
+      </div>
+
+      {/* KPI cards (now 8) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard label="MRR" value={formatINR(m.revenue.mrr_cents)} hint={`${m.revenue.paying_clinics} paying · ${m.revenue.trial_clinics} on trial`} accent="from-emerald-600 to-emerald-800" />
         <StatCard label="Clinics" value={m.total_clinics} delta={m.clinics_added} accent="from-amber-500 to-orange-600" />
         <StatCard label="Patients" value={m.total_patients} delta={m.patients_added} accent="from-emerald-500 to-teal-600" />
         <StatCard label="Bookings" value={m.total_bookings} delta={m.bookings} accent="from-brand-500 to-brand-700" />
         <StatCard label="Active Clinics (7d)" value={`${m.active_clinics}/${m.total_clinics}`} hint="Booked in last 7 days" accent="from-violet-500 to-purple-700" />
         <StatCard label="Avg Bookings / Active" value={m.avg_bookings_per_active_clinic} hint="Last 7 days" accent="from-pink-500 to-rose-600" />
+        <StatCard label="ARPA" value={formatINR(m.revenue.arpa_cents)} hint="Avg revenue per paying clinic" accent="from-cyan-500 to-blue-700" />
         <StatCard label="Pending Approvals" value={m.pending_bookings} hint="Across all clinics" accent="from-slate-700 to-slate-900" />
       </div>
 
@@ -201,50 +427,77 @@ export default function SuperDashboard() {
       <Card className="p-6">
         <div className="flex items-baseline justify-between mb-2 flex-wrap gap-2">
           <div>
-            <h2 className="text-lg font-bold text-slate-800">30-day Activity</h2>
-            <p className="text-sm text-slate-500">Clinic signups, patient signups, and bookings per day</p>
+            <h2 className="text-lg font-bold text-slate-800">Activity trend</h2>
+            <p className="text-sm text-slate-500">Daily clinic signups, patient signups, and bookings</p>
           </div>
-          <p className="text-xs text-slate-400">{totalEvents30d} total events</p>
+          <p className="text-xs text-slate-400">{totalEvents} total events over {m.days_window} days</p>
         </div>
-        <TrendChart data={m.trend_30d} />
+        <TrendChart data={m.trend} />
       </Card>
 
-      {/* Two-column lists */}
+      {/* Funnel + Cohort */}
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Top clinics */}
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-bold text-slate-800">Activation funnel</h2>
+              <p className="text-sm text-slate-500">How many clinics make it to engaged</p>
+            </div>
+            <Badge className="bg-brand-100 text-brand-700">leak detection</Badge>
+          </div>
+          <FunnelWidget stages={m.funnel} />
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-bold text-slate-800">Cohort retention</h2>
+              <p className="text-sm text-slate-500">Weekly clinic signup cohorts (last 6 weeks)</p>
+            </div>
+            <Badge className="bg-violet-100 text-violet-700">stickiness</Badge>
+          </div>
+          {m.cohorts.length === 0 ? (
+            <p className="text-sm text-slate-400 py-4 text-center">Not enough data yet.</p>
+          ) : (
+            <CohortHeatmap rows={m.cohorts} />
+          )}
+        </Card>
+      </div>
+
+      {/* Power Users + At-risk */}
+      <div className="grid lg:grid-cols-2 gap-6">
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-lg font-bold text-slate-800">Power Users</h2>
-              <p className="text-sm text-slate-500">Top clinics by bookings (last 30 days)</p>
+              <p className="text-sm text-slate-500">Top clinics by bookings (last {m.days_window} days). Click to drill down.</p>
             </div>
             <Badge className="bg-emerald-100 text-emerald-700">case studies</Badge>
           </div>
           {m.top_clinics.length === 0 ? (
-            <p className="text-sm text-slate-400 py-6 text-center">No bookings in the last 30 days yet.</p>
+            <p className="text-sm text-slate-400 py-6 text-center">No bookings in this window yet.</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-1">
               {m.top_clinics.map((c, i) => (
-                <li key={c.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors">
-                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-xs font-bold flex items-center justify-center shrink-0">
-                    {i + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <Link href={`/clinic/${c.slug}`} target="_blank" className="font-semibold text-slate-800 hover:text-brand-600 truncate block">
-                      {c.name}
-                    </Link>
-                    {c.last_booking_at && (
-                      <p className="text-xs text-slate-400">last booked {relativeTime(c.last_booking_at)}</p>
-                    )}
-                  </div>
-                  <span className="text-sm font-bold text-emerald-600">{c.booking_count}</span>
+                <li key={c.id}>
+                  <Link href={`/super/clinics/${c.id}`} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-emerald-50 transition-colors">
+                    <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-xs font-bold flex items-center justify-center shrink-0">
+                      {i + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-slate-800 truncate">{c.name}</p>
+                      {c.last_booking_at && (
+                        <p className="text-xs text-slate-400">last booked {relativeTime(c.last_booking_at)}</p>
+                      )}
+                    </div>
+                    <span className="text-sm font-bold text-emerald-600">{c.booking_count}</span>
+                  </Link>
                 </li>
               ))}
             </ul>
           )}
         </Card>
 
-        {/* At-risk clinics */}
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -256,22 +509,22 @@ export default function SuperDashboard() {
           {m.at_risk_clinics.length === 0 ? (
             <p className="text-sm text-slate-400 py-6 text-center">All clinics are getting traction. Nice.</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-1">
               {m.at_risk_clinics.map(c => (
                 <li key={c.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-amber-50 transition-colors">
-                  <span className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center shrink-0">
-                    {c.days_since_signup}d
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-800 truncate">{c.name}</p>
-                    {c.admin_email && (
-                      <a href={`mailto:${c.admin_email}`} className="text-xs text-brand-600 hover:underline truncate block">
-                        {c.admin_email}
-                      </a>
-                    )}
-                  </div>
+                  <Link href={`/super/clinics/${c.id}`} className="flex items-center gap-3 flex-1 min-w-0">
+                    <span className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center shrink-0">
+                      {c.days_since_signup}d
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-slate-800 truncate">{c.name}</p>
+                      {c.admin_email && (
+                        <span className="text-xs text-slate-500 truncate block">{c.admin_email}</span>
+                      )}
+                    </div>
+                  </Link>
                   {c.admin_email && (
-                    <a href={`mailto:${c.admin_email}?subject=Welcome to Tenivra — getting your first patients`}>
+                    <a href={`mailto:${c.admin_email}?subject=Welcome to Tenivra — getting your first patients`} onClick={e => e.stopPropagation()}>
                       <Button variant="secondary" size="sm">Email</Button>
                     </a>
                   )}
@@ -282,8 +535,14 @@ export default function SuperDashboard() {
         </Card>
       </div>
 
-      {/* Recent signups */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      {/* Cities + Recent signups */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        <Card className="p-6 lg:col-span-1">
+          <h2 className="text-lg font-bold text-slate-800 mb-1">Where you're winning</h2>
+          <p className="text-sm text-slate-500 mb-4">Top cities by clinic count</p>
+          <CitiesWidget cities={m.cities} />
+        </Card>
+
         <Card className="p-6">
           <h2 className="text-lg font-bold text-slate-800 mb-1">New Clinics This Week</h2>
           <p className="text-sm text-slate-500 mb-4">Reach out and welcome them.</p>
@@ -292,16 +551,16 @@ export default function SuperDashboard() {
           ) : (
             <ul className="space-y-1">
               {m.recent_clinics.map(c => (
-                <li key={c.id} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors">
-                  <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 text-white text-xs font-bold flex items-center justify-center">
-                    {c.name.charAt(0).toUpperCase()}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <Link href={`/clinic/${c.slug}`} target="_blank" className="font-semibold text-slate-700 hover:text-brand-600 truncate block">
-                      {c.name}
-                    </Link>
-                    <p className="text-xs text-slate-400">{relativeTime(c.signed_up_at)}</p>
-                  </div>
+                <li key={c.id}>
+                  <Link href={`/super/clinics/${c.id}`} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors">
+                    <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 text-white text-xs font-bold flex items-center justify-center">
+                      {c.name.charAt(0).toUpperCase()}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-slate-700 truncate">{c.name}</p>
+                      <p className="text-xs text-slate-400">{relativeTime(c.signed_up_at)}</p>
+                    </div>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -331,6 +590,8 @@ export default function SuperDashboard() {
           )}
         </Card>
       </div>
+
+      {showDigest && token && <DigestModal token={token} onClose={() => setShowDigest(false)} />}
     </div>
   );
 }

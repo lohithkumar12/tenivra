@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { api } from "./api";
+import { identify, resetAnalytics, track, Events } from "./analytics";
 
 export interface User {
   id: string;
@@ -62,7 +63,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (saved) {
       setToken(saved);
       api.get<User>("/api/auth/me", saved)
-        .then(setUser)
+        .then((u) => {
+          setUser(u);
+          identify(u.id, { email: u.email, role: u.role, tenant_id: u.tenant_id });
+        })
         .catch(() => { localStorage.removeItem("tenivra_token"); setToken(null); })
         .finally(() => setLoading(false));
     } else {
@@ -75,6 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(res.access_token);
     setUser(res.user);
     localStorage.setItem("tenivra_token", res.access_token);
+    identify(res.user.id, { email: res.user.email, role: res.user.role, tenant_id: res.user.tenant_id });
+    track(Events.LoginCompleted, { role: res.user.role });
     return res.user;
   };
 
@@ -83,6 +89,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(res.access_token);
     setUser(res.user);
     localStorage.setItem("tenivra_token", res.access_token);
+    identify(res.user.id, { email: res.user.email, role: res.user.role, tenant_id: res.user.tenant_id });
+    track(Events.ClinicSignupCompleted, { tenant_id: res.user.tenant_id });
     return res.user;
   };
 
@@ -91,6 +99,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(res.access_token);
     setUser(res.user);
     localStorage.setItem("tenivra_token", res.access_token);
+    identify(res.user.id, { email: res.user.email, role: res.user.role });
+    track(Events.PatientSignupCompleted, {});
     return res.user;
   };
 
@@ -98,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     setUser(null);
     localStorage.removeItem("tenivra_token");
+    resetAnalytics();
   };
 
   return <Ctx.Provider value={{ user, token, loading, login, signup, patientSignup, logout }}>{children}</Ctx.Provider>;

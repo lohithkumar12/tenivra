@@ -7,7 +7,8 @@ from app.database import SessionLocal, engine, Base
 from app.models import (
     Tenant, User, Doctor, Service, FAQ,
     ClinicTiming, AppointmentRule, Appointment,
-    UserRole, AppointmentStatus,
+    UserRole, AppointmentStatus, TenantPlan, SubscriptionStatus,
+    PLAN_DEFAULT_PRICE_CENTS,
 )
 
 
@@ -31,12 +32,16 @@ def seed():
         email="info@sunriseclinic.in",
         phone="+91 98765 43210",
         address="Plot 42, Road No. 10, Jubilee Hills, Hyderabad, Telangana 500033",
+        city="Hyderabad",
         description=(
             "Sunrise Clinic is a multi-specialty healthcare centre providing "
             "personalized care in dermatology, physiotherapy, and general wellness. "
             "Walk-ins welcome."
         ),
         specializations=["Dermatology", "Physiotherapy", "General Medicine"],
+        plan=TenantPlan.STARTER.value,
+        monthly_price_cents=PLAN_DEFAULT_PRICE_CENTS[TenantPlan.STARTER.value],
+        subscription_status=SubscriptionStatus.ACTIVE.value,
     )
     db.add(clinic)
     db.flush()
