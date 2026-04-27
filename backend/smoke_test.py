@@ -321,6 +321,67 @@ for q in ["What are your timings?", "What is the consultation fee?", "Who are th
     resp_type = b.get("type", "?") if s == 200 else "ERROR"
     check(f"Assistant: '{q}' -> {resp_type}", s, 200, b)
 
+# ── Public: Clinic Directory ────────────────────────────────
+print("\n-- Public: Clinic Directory --")
+s, b = req("GET", "/api/public/clinics")
+check("GET /api/public/clinics", s, 200, b)
+if isinstance(b, list) and b:
+    print(f"     {len(b)} clinic(s) listed; first: {b[0].get('name')} (slug: {b[0].get('slug')})")
+
+s, b = req("GET", "/api/public/clinics?q=sunrise")
+check("GET /api/public/clinics?q=sunrise", s, 200, b)
+
+# ── Patient Auth + My Bookings ──────────────────────────────
+print("\n-- Patient: Signup + Bookings --")
+puniq = str(int(time.time())) + "p"
+s, b = req("POST", "/api/auth/patient/signup", {
+    "full_name": "Smoke Patient",
+    "email": f"smokepatient{puniq}@example.com",
+    "phone": "9000000000",
+    "password": "patient123",
+})
+check("POST /api/auth/patient/signup", s, 201, b)
+patient_token = b.get("access_token", "") if s == 201 else ""
+
+s, b = req("POST", "/api/auth/patient/signup", {
+    "full_name": "X", "email": f"smokepatient{puniq}@example.com", "password": "patient123",
+})
+check("POST /api/auth/patient/signup (dup email -> 400)", s, 400, b)
+
+s, b = req("GET", "/api/patient/me", token=patient_token)
+check("GET /api/patient/me", s, 200, b)
+
+s, b = req("GET", "/api/patient/appointments", token=patient_token)
+check("GET /api/patient/appointments (empty)", s, 200, b)
+
+# Book as authenticated patient → should attach patient_user_id
+if pub_services:
+    appt_body = {
+        "patient_name": "Smoke Patient",
+        "patient_phone": "9000000000",
+        "patient_email": f"smokepatient{puniq}@example.com",
+        "service_id": pub_services[0]["id"],
+        "preferred_date": "2026-04-26",
+        "preferred_time": "11:00",
+        "notes": "Booked while logged in",
+    }
+    s, b = req("POST", f"/api/public/{SLUG}/appointments", appt_body, token=patient_token)
+    check("POST /api/public/:slug/appointments (as patient)", s, 201, b)
+    if s == 201:
+        if b.get("patient_user_id"):
+            check("  -> patient_user_id linked", 200, 200)
+        else:
+            check("  -> patient_user_id linked", 0, 200, b)
+
+    s, b = req("GET", "/api/patient/appointments", token=patient_token)
+    check("GET /api/patient/appointments (after booking)", s, 200, b)
+    if isinstance(b, list) and b:
+        print(f"     {len(b)} booking(s); clinic_name: {b[0].get('clinic_name')}")
+
+# Patient role gate on clinic admin endpoints
+s, b = req("GET", "/api/clinic/profile", token=patient_token)
+check("GET /api/clinic/profile (patient -> 403)", s, 403, b)
+
 # ── Public: 404 for bad slug ────────────────────────────────
 print("\n-- Edge Cases --")
 s, b = req("GET", "/api/public/nonexistent-clinic/profile")

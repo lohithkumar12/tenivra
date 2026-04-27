@@ -1,18 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import or_, func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import (
     Tenant, Doctor, Service, FAQ, ClinicTiming,
-    AppointmentRule, Appointment, AppointmentStatus,
+    AppointmentRule, Appointment, AppointmentStatus, User, UserRole,
 )
 from app.schemas import (
     TenantResponse, DoctorResponse, ServiceResponse, FAQResponse,
     ClinicTimingResponse, AppointmentRuleResponse,
-    AppointmentCreate, AppointmentResponse,
+    AppointmentCreate, AppointmentResponse, PublicClinicSummary,
     AssistantQuery, AssistantResponse,
 )
 from app.services.assistant import process_query
+from app.deps import get_optional_user
 
 router = APIRouter(prefix="/api/public", tags=["public"])
 
@@ -22,6 +25,42 @@ def _active_tenant(slug: str, db: Session) -> Tenant:
     if not t:
         raise HTTPException(status_code=404, detail="Clinic not found")
     return t
+
+
+@router.get("/clinics", response_model=list[PublicClinicSummary])
+def list_public_clinics(
+    q: Optional[str] = Query(None, description="Search by name, address, specialization"),
+    db: Session = Depends(get_db),
+):
+    """Public marketplace listing of all active clinics."""
+    query = db.query(Tenant).filter(Tenant.is_active.is_(True))
+    if q:
+        like = f"%{q.lower()}%"
+        query = query.filter(or_(
+            func.lower(Tenant.name).like(like),
+            func.lower(Tenant.address).like(like),
+            func.lower(Tenant.description).like(like),
+        ))
+    tenants = query.order_by(Tenant.created_at.desc()).all()
+
+    doc_counts = dict(
+        db.query(Doctor.tenant_id, func.count(Doctor.id))
+          .filter(Doctor.is_active.is_(True))
+          .group_by(Doctor.tenant_id).all()
+    )
+    svc_counts = dict(
+        db.query(Service.tenant_id, func.count(Service.id))
+          .filter(Service.is_active.is_(True))
+          .group_by(Service.tenant_id).all()
+    )
+
+    out = []
+    for t in tenants:
+        item = PublicClinicSummary.model_validate(t)
+        item.doctor_count = doc_counts.get(t.id, 0)
+        item.service_count = svc_counts.get(t.id, 0)
+        out.append(item)
+    return out
 
 
 @router.get("/{slug}/profile", response_model=TenantResponse)
@@ -63,7 +102,12 @@ def public_rules(slug: str, db: Session = Depends(get_db)):
 
 
 @router.post("/{slug}/appointments", response_model=AppointmentResponse, status_code=201)
-def book_appointment(slug: str, body: AppointmentCreate, db: Session = Depends(get_db)):
+def book_appointment(
+    slug: str,
+    body: AppointmentCreate,
+    db: Session = Depends(get_db),
+    current: Optional[User] = Depends(get_optional_user),
+):
     t = _active_tenant(slug, db)
 
     svc = db.query(Service).filter(Service.id == body.service_id, Service.tenant_id == t.id).first()
@@ -75,7 +119,16 @@ def book_appointment(slug: str, body: AppointmentCreate, db: Session = Depends(g
     if rules and not rules.manual_approval_required:
         initial = AppointmentStatus.CONFIRMED.value
 
-    appt = Appointment(tenant_id=t.id, status=initial, **body.model_dump())
+    patient_user_id = None
+    if current and current.role == UserRole.PATIENT.value:
+        patient_user_id = current.id
+
+    appt = Appointment(
+        tenant_id=t.id,
+        status=initial,
+        patient_user_id=patient_user_id,
+        **body.model_dump(),
+    )
     db.add(appt)
     db.commit()
     db.refresh(appt)
@@ -84,6 +137,8 @@ def book_appointment(slug: str, body: AppointmentCreate, db: Session = Depends(g
     r.service_name = svc.name
     if appt.doctor:
         r.doctor_name = appt.doctor.name
+    r.clinic_name = t.name
+    r.clinic_slug = t.slug
     return r
 
 

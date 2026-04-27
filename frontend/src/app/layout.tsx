@@ -6,7 +6,7 @@ import { AuthProvider } from "@/lib/auth";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "Tenivra — Your Clinic, Automated",
+  title: "Tenivra - Your Clinic, Automated",
   description: "Multi-tenant SaaS platform for clinics. Automate patient bookings, FAQs, and clinic management.",
 };
 

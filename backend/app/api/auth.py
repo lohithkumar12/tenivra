@@ -8,7 +8,7 @@ import bcrypt
 from app.database import get_db
 from app.config import get_settings
 from app.models import User, Tenant, AppointmentRule, UserRole
-from app.schemas import LoginRequest, TokenResponse, UserResponse, ClinicSignupRequest
+from app.schemas import LoginRequest, TokenResponse, UserResponse, ClinicSignupRequest, PatientSignupRequest
 from app.deps import get_current_user
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -67,6 +67,27 @@ def signup(body: ClinicSignupRequest, db: Session = Depends(get_db)):
     db.add(user)
     db.add(AppointmentRule(tenant_id=tenant.id))
 
+    db.commit()
+    db.refresh(user)
+    return TokenResponse(access_token=create_access_token(user.id), user=UserResponse.model_validate(user))
+
+
+@router.post("/patient/signup", response_model=TokenResponse, status_code=201)
+def patient_signup(body: PatientSignupRequest, db: Session = Depends(get_db)):
+    if len(body.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    if db.query(User).filter(User.email == body.email).first():
+        raise HTTPException(status_code=400, detail="An account with this email already exists")
+
+    user = User(
+        tenant_id=None,
+        email=body.email,
+        phone=body.phone,
+        hashed_password=bcrypt.hashpw(body.password.encode(), bcrypt.gensalt()).decode(),
+        full_name=body.full_name,
+        role=UserRole.PATIENT.value,
+    )
+    db.add(user)
     db.commit()
     db.refresh(user)
     return TokenResponse(access_token=create_access_token(user.id), user=UserResponse.model_validate(user))

@@ -55,6 +55,15 @@ def seed():
         full_name="Lohith Kumar",
         role=UserRole.SUPER_ADMIN.value,
     ))
+    sample_patient = User(
+        email="patient@tenivra.com",
+        phone="+91 99887 76655",
+        hashed_password=_hash("patient123"),
+        full_name="Ananya Reddy",
+        role=UserRole.PATIENT.value,
+    )
+    db.add(sample_patient)
+    db.flush()
 
     # ── Doctors ───────────────────────────────────────────────────────
     doc1 = Doctor(
@@ -149,8 +158,9 @@ def seed():
     db.add_all([
         Appointment(
             tenant_id=clinic.id, service_id=svcs[0].id, doctor_id=doc1.id,
+            patient_user_id=sample_patient.id,
             patient_name="Ananya Reddy", patient_phone="+91 99887 76655",
-            patient_email="ananya@example.com",
+            patient_email="patient@tenivra.com",
             preferred_date="2026-04-10", preferred_time="10:00",
             notes="First visit, mild acne concerns.",
             status=AppointmentStatus.CONFIRMED.value,
@@ -177,7 +187,9 @@ def seed():
     print("Demo data seeded successfully!")
     print("  Clinic admin  : admin@sunriseclinic.in / admin123")
     print("  Super admin   : super@tenivra.com / super123")
+    print("  Sample patient: patient@tenivra.com / patient123")
     print("  Public page   : /clinic/sunrise-clinic")
+    print("  Directory     : /clinics")
 
 
 if __name__ == "__main__":

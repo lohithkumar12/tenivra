@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth";
+import { useAuth, homeForRole } from "@/lib/auth";
 import { Button, Input } from "@/components/ui";
 import Link from "next/link";
 
@@ -20,7 +20,7 @@ export default function LoginPage() {
     setBusy(true);
     try {
       const user = await login(email, password);
-      router.push(user.role === "super_admin" ? "/super" : "/admin");
+      router.push(homeForRole(user.role));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -59,10 +59,16 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-500">
-            New to Tenivra?{" "}
-            <Link href="/signup" className="text-brand-600 font-semibold hover:text-brand-700">Create a clinic account</Link>
-          </p>
+          <div className="mt-6 text-center text-sm text-slate-500 space-y-1">
+            <p>
+              Patient looking to book?{" "}
+              <Link href="/patient/signup" className="text-brand-600 font-semibold hover:text-brand-700">Create a patient account</Link>
+            </p>
+            <p>
+              New clinic?{" "}
+              <Link href="/signup" className="text-brand-600 font-semibold hover:text-brand-700">List your clinic</Link>
+            </p>
+          </div>
 
           <div className="mt-6 pt-6 border-t border-slate-200 text-center">
             <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-3">Try the Demo</p>

@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { Button, Card, Input, Textarea, Select, Spinner } from "@/components/ui";
 
 interface Svc { id: string; name: string; fee: number; }
@@ -11,6 +13,9 @@ interface Doc { id: string; name: string; }
 export default function BookPage() {
   const { slug } = useParams();
   const router = useRouter();
+  const { user, token } = useAuth();
+  const isPatient = user?.role === "patient";
+
   const [svcs, setSvcs] = useState<Svc[]>([]);
   const [docs, setDocs] = useState<Doc[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,14 +37,34 @@ export default function BookPage() {
     }).finally(() => setLoading(false));
   }, [slug]);
 
+  useEffect(() => {
+    if (isPatient && user) {
+      setForm(f => ({
+        ...f,
+        patient_name: f.patient_name || user.full_name || "",
+        patient_email: f.patient_email || user.email || "",
+        patient_phone: f.patient_phone || user.phone || "",
+      }));
+    }
+  }, [isPatient, user]);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(""); setBusy(true);
     try {
-      const res = await api.post<{ id: string; status: string }>(`/api/public/${slug}/appointments`, {
-        ...form, doctor_id: form.doctor_id || undefined, patient_email: form.patient_email || undefined,
-      });
-      router.push(`/clinic/${slug}/book/success?status=${res.status}`);
+      const res = await api.post<{ id: string; status: string }>(
+        `/api/public/${slug}/appointments`,
+        {
+          ...form,
+          doctor_id: form.doctor_id || undefined,
+          patient_email: form.patient_email || undefined,
+        },
+        isPatient ? token ?? undefined : undefined,
+      );
+      const dest = isPatient
+        ? "/patient/bookings"
+        : `/clinic/${slug}/book/success?status=${res.status}`;
+      router.push(dest);
     } catch (e: unknown) { setErr(e instanceof Error ? e.message : "Something went wrong"); }
     finally { setBusy(false); }
   };
@@ -50,6 +75,25 @@ export default function BookPage() {
     <div className="animate-fade-in">
       <h2 className="text-2xl font-bold mb-2">Book an Appointment</h2>
       <p className="text-slate-500 mb-6">Fill in your details and we will get back to you shortly.</p>
+
+      {!user && (
+        <div className="mb-5 max-w-lg p-4 rounded-2xl bg-brand-50 border border-brand-100 text-sm text-slate-700">
+          <p>
+            <Link href="/patient/signup" className="text-brand-700 font-semibold hover:underline">Create a free patient account</Link>
+            {" "}or{" "}
+            <Link href="/login" className="text-brand-700 font-semibold hover:underline">sign in</Link>
+            {" "}to track all your bookings in one place. (Optional — you can also book as a guest.)
+          </p>
+        </div>
+      )}
+
+      {isPatient && (
+        <div className="mb-5 max-w-lg p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-sm text-emerald-800 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+          Signed in as <span className="font-semibold">{user?.full_name}</span> — this booking will appear in your My Bookings.
+        </div>
+      )}
+
       <Card className="p-7 max-w-lg">
         <form onSubmit={submit} className="space-y-5">
           <Input label="Your name" value={form.patient_name} onChange={e => setForm({ ...form, patient_name: e.target.value })} placeholder="Enter your full name" required />

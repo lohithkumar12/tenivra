@@ -23,6 +23,7 @@ class UserResponse(BaseModel):
     email: str
     full_name: str
     role: str
+    phone: Optional[str] = None
     tenant_id: Optional[str] = None
 
 
@@ -39,6 +40,28 @@ class ClinicSignupRequest(BaseModel):
     admin_name: str
     admin_email: str
     admin_password: str
+
+
+class PatientSignupRequest(BaseModel):
+    full_name: str
+    email: str
+    phone: Optional[str] = None
+    password: str
+
+
+# ── Public clinic directory ──────────────────────────────────────────────
+
+class PublicClinicSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    name: str
+    slug: str
+    address: Optional[str] = None
+    phone: Optional[str] = None
+    description: Optional[str] = None
+    specializations: list[str] = []
+    doctor_count: int = 0
+    service_count: int = 0
 
 
 # ── Tenant ───────────────────────────────────────────────────────────────
@@ -281,6 +304,7 @@ class AppointmentResponse(BaseModel):
     patient_email: Optional[str] = None
     service_id: str
     doctor_id: Optional[str] = None
+    patient_user_id: Optional[str] = None
     preferred_date: str
     preferred_time: str
     notes: Optional[str] = None
@@ -290,6 +314,8 @@ class AppointmentResponse(BaseModel):
     updated_at: Optional[datetime] = None
     service_name: Optional[str] = None
     doctor_name: Optional[str] = None
+    clinic_name: Optional[str] = None
+    clinic_slug: Optional[str] = None
 
 
 # ── Assistant ────────────────────────────────────────────────────────────

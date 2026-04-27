@@ -35,14 +35,14 @@ export default function HomePage() {
             Tenivra
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link href="/clinic/sunrise-clinic" className="hidden sm:block">
-              <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white hover:bg-white/10">Live Demo</Button>
+            <Link href="/clinics" className="hidden sm:block">
+              <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white hover:bg-white/10">Find a Clinic</Button>
             </Link>
             <Link href="/login">
               <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white hover:bg-white/10">Sign In</Button>
             </Link>
             <Link href="/signup">
-              <Button variant="gradient" size="sm">Sign Up Free</Button>
+              <Button variant="gradient" size="sm">List Your Clinic</Button>
             </Link>
           </div>
         </div>
@@ -73,15 +73,18 @@ export default function HomePage() {
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4 animate-fade-in-up delay-300 opacity-0">
-            <Link href="/signup">
-              <Button variant="gradient" size="xl">Start Free — No Card Required</Button>
+            <Link href="/clinics">
+              <Button variant="gradient" size="xl">Find a Clinic & Book</Button>
             </Link>
-            <Link href="/clinic/sunrise-clinic">
+            <Link href="/signup">
               <Button variant="secondary" size="xl" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-                See Live Demo
+                List Your Clinic
               </Button>
             </Link>
           </div>
+          <p className="mt-4 text-sm text-slate-400 animate-fade-in-up delay-300 opacity-0">
+            Patients book in seconds. Clinics get online in 60 seconds.
+          </p>
         </div>
       </section>
 

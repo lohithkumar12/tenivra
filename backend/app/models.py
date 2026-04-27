@@ -13,6 +13,7 @@ class UserRole(str, enum.Enum):
     SUPER_ADMIN = "super_admin"
     CLINIC_ADMIN = "clinic_admin"
     RECEPTIONIST = "receptionist"
+    PATIENT = "patient"
 
 
 class AppointmentStatus(str, enum.Enum):
@@ -70,6 +71,7 @@ class User(Base):
     id = Column(String(36), primary_key=True, default=_uuid)
     tenant_id = Column(String(36), ForeignKey("tenants.id"), nullable=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
+    phone = Column(String(20))
     hashed_password = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=False)
     role = Column(String(20), nullable=False, default=UserRole.CLINIC_ADMIN.value)
@@ -78,6 +80,7 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), default=_now, onupdate=_now)
 
     tenant = relationship("Tenant", back_populates="users")
+    appointments = relationship("Appointment", back_populates="patient_user")
 
 
 # ---------------------------------------------------------------------------
@@ -195,6 +198,7 @@ class Appointment(Base):
     tenant_id = Column(String(36), ForeignKey("tenants.id"), nullable=False)
     service_id = Column(String(36), ForeignKey("services.id"), nullable=False)
     doctor_id = Column(String(36), ForeignKey("doctors.id"), nullable=True)
+    patient_user_id = Column(String(36), ForeignKey("users.id"), nullable=True)
     patient_name = Column(String(255), nullable=False)
     patient_phone = Column(String(20), nullable=False)
     patient_email = Column(String(255))
@@ -209,3 +213,4 @@ class Appointment(Base):
     tenant = relationship("Tenant", back_populates="appointments")
     service = relationship("Service", back_populates="appointments")
     doctor = relationship("Doctor", back_populates="appointments")
+    patient_user = relationship("User", back_populates="appointments", foreign_keys=[patient_user_id])
