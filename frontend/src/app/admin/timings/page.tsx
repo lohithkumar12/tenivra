@@ -33,7 +33,11 @@ export default function TimingsPage() {
 
   const save = async () => {
     setSaving(true); setMsg("");
-    try { await api.put("/api/clinic/timings", { timings: rows }, token!); setMsg("Saved!"); }
+    try {
+      await api.put("/api/clinic/timings", { timings: rows }, token!);
+      setMsg("Saved!");
+      window.dispatchEvent(new Event("tenivra:onboarding-refresh"));
+    }
     catch (e: unknown) { setMsg(e instanceof Error ? e.message : "Error"); }
     finally { setSaving(false); }
   };

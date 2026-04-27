@@ -32,16 +32,18 @@ export default function DoctorsPage() {
     setForm({ ...form, available_days: days });
   };
 
+  const refreshOnboarding = () => window.dispatchEvent(new Event("tenivra:onboarding-refresh"));
+
   const save = async () => {
     setBusy(true);
     try {
       if (form.id) await api.patch(`/api/clinic/doctors/${form.id}`, form, token!);
       else await api.post("/api/clinic/doctors", form, token!);
-      setOpen(false); load();
+      setOpen(false); load(); refreshOnboarding();
     } finally { setBusy(false); }
   };
 
-  const del = async (id: string) => { if (confirm("Delete this doctor?")) { await api.del(`/api/clinic/doctors/${id}`, token!); load(); } };
+  const del = async (id: string) => { if (confirm("Delete this doctor?")) { await api.del(`/api/clinic/doctors/${id}`, token!); load(); refreshOnboarding(); } };
 
   if (loading) return <Spinner />;
 

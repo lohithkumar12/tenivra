@@ -29,16 +29,18 @@ export default function ServicesPage() {
 
   useEffect(() => { if (token) load(); }, [token]);
 
+  const refreshOnboarding = () => window.dispatchEvent(new Event("tenivra:onboarding-refresh"));
+
   const save = async () => {
     setBusy(true);
     try {
       if (form.id) await api.patch(`/api/clinic/services/${form.id}`, form, token!);
       else await api.post("/api/clinic/services", form, token!);
-      setOpen(false); load();
+      setOpen(false); load(); refreshOnboarding();
     } finally { setBusy(false); }
   };
 
-  const del = async (id: string) => { if (confirm("Delete this service?")) { await api.del(`/api/clinic/services/${id}`, token!); load(); } };
+  const del = async (id: string) => { if (confirm("Delete this service?")) { await api.del(`/api/clinic/services/${id}`, token!); load(); refreshOnboarding(); } };
 
   if (loading) return <Spinner />;
 
