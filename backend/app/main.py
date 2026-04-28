@@ -13,20 +13,29 @@ from app.rate_limit import limiter
 
 def _ensure_columns():
     """Add columns introduced after initial release. Idempotent, works on SQLite + Postgres."""
-    inspector = inspect(engine)
+    dialect = engine.dialect.name
+    timestamp_type = "TIMESTAMP" if dialect == "postgresql" else "DATETIME"
+    bool_false = "FALSE" if dialect == "postgresql" else "0"
 
     def add(table: str, col: str, ddl: str):
-        existing = {c["name"] for c in inspector.get_columns(table)}
-        if col in existing:
-            return
-        with engine.begin() as conn:
-            conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {ddl}"))
+        try:
+            inspector = inspect(engine)
+            existing = {c["name"] for c in inspector.get_columns(table)}
+            if col in existing:
+                return
+            with engine.begin() as conn:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {ddl}"))
+            print(f"[startup] added column {table}.{col}")
+        except Exception as e:
+            # Keep applying the rest of the lightweight migrations even if one column fails.
+            print(f"[startup] column migration failed for {table}.{col}: {e}")
 
+    inspector = inspect(engine)
     tables = inspector.get_table_names()
     if "users" in tables:
         add("users", "phone", "VARCHAR(20)")
         add("users", "password_reset_token", "VARCHAR(128)")
-        add("users", "password_reset_expires", "DATETIME")
+        add("users", "password_reset_expires", timestamp_type)
     if "appointments" in tables:
         add("appointments", "patient_user_id", "VARCHAR(36)")
     if "tenants" in tables:
@@ -36,7 +45,7 @@ def _ensure_columns():
         add("tenants", "subscription_status", "VARCHAR(20) DEFAULT 'trial' NOT NULL")
         add("tenants", "stripe_customer_id", "VARCHAR(120)")
         add("tenants", "stripe_subscription_id", "VARCHAR(120)")
-        add("tenants", "onboarding_completed", "BOOLEAN DEFAULT FALSE NOT NULL")
+        add("tenants", "onboarding_completed", f"BOOLEAN DEFAULT {bool_false} NOT NULL")
 
 
 @asynccontextmanager

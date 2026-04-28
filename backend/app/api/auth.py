@@ -3,6 +3,7 @@ import secrets
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from datetime import datetime, timedelta, timezone
 from jose import jwt
 import bcrypt
@@ -32,10 +33,15 @@ def slugify(text: str) -> str:
     return s or "clinic"
 
 
+def normalize_email(email: str) -> str:
+    return email.strip().lower()
+
+
 @router.post("/login", response_model=TokenResponse)
 @limiter.limit("10/minute")
 def login(request: Request, body: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == body.email).first()
+    email = normalize_email(body.email)
+    user = db.query(User).filter(func.lower(User.email) == email).first()
     if not user or not bcrypt.checkpw(body.password.encode(), user.hashed_password.encode()):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
     if not user.is_active:
@@ -48,7 +54,8 @@ def login(request: Request, body: LoginRequest, db: Session = Depends(get_db)):
 def signup(request: Request, body: ClinicSignupRequest, db: Session = Depends(get_db)):
     if len(body.admin_password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
-    if db.query(User).filter(User.email == body.admin_email).first():
+    admin_email = normalize_email(body.admin_email)
+    if db.query(User).filter(func.lower(User.email) == admin_email).first():
         raise HTTPException(status_code=400, detail="An account with this email already exists")
 
     base_slug = slugify(body.clinic_name)
@@ -68,7 +75,7 @@ def signup(request: Request, body: ClinicSignupRequest, db: Session = Depends(ge
 
     user = User(
         tenant_id=tenant.id,
-        email=body.admin_email,
+        email=admin_email,
         hashed_password=bcrypt.hashpw(body.admin_password.encode(), bcrypt.gensalt()).decode(),
         full_name=body.admin_name,
         role=UserRole.CLINIC_ADMIN.value,
@@ -76,7 +83,14 @@ def signup(request: Request, body: ClinicSignupRequest, db: Session = Depends(ge
     db.add(user)
     db.add(AppointmentRule(tenant_id=tenant.id))
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Signup conflict. Try a different clinic name or email.")
+    except SQLAlchemyError:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Unable to create account right now. Please try again.")
     db.refresh(user)
     return TokenResponse(access_token=create_access_token(user.id), user=UserResponse.model_validate(user))
 
@@ -86,19 +100,27 @@ def signup(request: Request, body: ClinicSignupRequest, db: Session = Depends(ge
 def patient_signup(request: Request, body: PatientSignupRequest, db: Session = Depends(get_db)):
     if len(body.password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
-    if db.query(User).filter(User.email == body.email).first():
+    email = normalize_email(body.email)
+    if db.query(User).filter(func.lower(User.email) == email).first():
         raise HTTPException(status_code=400, detail="An account with this email already exists")
 
     user = User(
         tenant_id=None,
-        email=body.email,
+        email=email,
         phone=body.phone,
         hashed_password=bcrypt.hashpw(body.password.encode(), bcrypt.gensalt()).decode(),
         full_name=body.full_name,
         role=UserRole.PATIENT.value,
     )
     db.add(user)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="An account with this email already exists")
+    except SQLAlchemyError:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Unable to create account right now. Please try again.")
     db.refresh(user)
     return TokenResponse(access_token=create_access_token(user.id), user=UserResponse.model_validate(user))
 

@@ -2,6 +2,8 @@ interface FetchOpts extends RequestInit {
   token?: string;
 }
 
+const REQUEST_TIMEOUT_MS = 15000;
+
 async function request<T>(path: string, opts: FetchOpts = {}): Promise<T> {
   const { token, headers: extra, ...rest } = opts;
   const headers: Record<string, string> = {
@@ -10,11 +12,27 @@ async function request<T>(path: string, opts: FetchOpts = {}): Promise<T> {
     ...(extra as Record<string, string> ?? {}),
   };
 
-  const res = await fetch(path, { ...rest, headers });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let res: Response;
+  try {
+    res = await fetch(path, { ...rest, headers, signal: controller.signal });
+  } catch (err: unknown) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error("Request timed out. Please try again.");
+    }
+    throw new Error("Unable to reach server. Check your connection and try again.");
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({ detail: "Something went wrong" }));
-    throw new Error(body.detail || `HTTP ${res.status}`);
+    const body = await res.json().catch(() => null);
+    if (body && typeof body.detail === "string" && body.detail.trim()) {
+      throw new Error(body.detail);
+    }
+    const fallback = await res.text().catch(() => "");
+    throw new Error(fallback || `Request failed (${res.status})`);
   }
 
   if (res.status === 204) return undefined as T;
