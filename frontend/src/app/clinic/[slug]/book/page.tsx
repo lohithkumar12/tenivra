@@ -62,7 +62,16 @@ function BookInner() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErr(""); setBusy(true);
+    setErr("");
+    if (!form.service_id?.trim()) {
+      setErr(
+        svcs.length === 0
+          ? "This clinic has not added any services yet, so online booking is not available. Please call the clinic or try again later."
+          : "Please choose a service.",
+      );
+      return;
+    }
+    setBusy(true);
     try {
       const res = await api.post<{ id: string; status: string }>(
         `/api/public/${slug}/appointments`,
@@ -126,10 +135,15 @@ function BookInner() {
           <Input label="Phone number" type="tel" value={form.patient_phone} onChange={e => setForm({ ...form, patient_phone: e.target.value })} placeholder="+91 98765 43210" required />
           <Input label="Email (optional)" type="email" value={form.patient_email} onChange={e => setForm({ ...form, patient_email: e.target.value })} placeholder="you@example.com" />
 
-          {svcs.length > 0 && (
+          {svcs.length > 0 ? (
             <Select label="Service"
               options={svcs.map(s => ({ value: s.id, label: `${s.name} (Rs. ${s.fee})` }))}
               value={form.service_id} onChange={e => setForm({ ...form, service_id: e.target.value })} />
+          ) : (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              <p className="font-semibold">No services listed yet</p>
+              <p className="mt-1 text-amber-800">The clinic admin needs to add at least one service in the dashboard before patients can book here.</p>
+            </div>
           )}
 
           <Select label="Preferred doctor"
@@ -144,7 +158,7 @@ function BookInner() {
           <Textarea label="Notes (optional)" placeholder="Any additional details..." value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
 
           {err && <p className="text-sm text-red-600 bg-red-50 px-4 py-2 rounded-xl">{err}</p>}
-          <Button type="submit" variant="gradient" className="w-full" size="lg" disabled={busy}>{busy ? "Submitting..." : "Request Appointment"}</Button>
+          <Button type="submit" variant="gradient" className="w-full" size="lg" disabled={busy || svcs.length === 0}>{busy ? "Submitting..." : "Request Appointment"}</Button>
         </form>
       </Card>
     </div>
