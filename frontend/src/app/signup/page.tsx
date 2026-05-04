@@ -38,13 +38,30 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface-900 relative overflow-hidden py-12">
+    <div className="min-h-screen flex flex-col bg-surface-900 relative overflow-hidden">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-surface-900/80 backdrop-blur-xl border-b border-white/5">
+        <div className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
+          <Link href="/" className="text-xl font-bold text-white hover:text-white/90 transition-colors">
+            Tenivra
+          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/clinics">
+              <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white hover:bg-white/10 hidden sm:inline-flex">Find a Clinic</Button>
+            </Link>
+            <Link href="/login">
+              <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white hover:bg-white/10">Sign In</Button>
+            </Link>
+          </div>
+        </div>
+      </nav>
+
       <div className="absolute inset-0 bg-hero-gradient opacity-60" />
       <div className="absolute inset-0 bg-grid-pattern" />
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-500/20 rounded-full blur-3xl animate-float" />
       <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-accent-500/15 rounded-full blur-3xl animate-float delay-300" />
 
-      <div className="relative z-10 w-full max-w-md mx-4 animate-fade-in-up">
+      <div className="flex-1 flex items-center justify-center pt-20 pb-12 px-4">
+      <div className="relative z-10 w-full max-w-md animate-fade-in-up">
         <div className="glass-light rounded-3xl p-8 sm:p-10">
           <div className="text-center mb-7">
             <Link href="/" className="text-2xl font-bold text-gradient inline-block">Tenivra</Link>
@@ -104,6 +121,7 @@ export default function SignupPage() {
             <Link href="/login" className="text-brand-600 font-semibold hover:underline">Sign in</Link>
           </p>
         </div>
+      </div>
       </div>
     </div>
   );

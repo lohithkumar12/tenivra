@@ -73,14 +73,6 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <div className="mt-6 pt-6 border-t border-slate-200 text-center">
-            <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-3">Try the Demo</p>
-            <div className="bg-slate-50 rounded-xl p-3 text-xs">
-              <p className="font-semibold text-slate-600 mb-1">Sample Clinic Admin</p>
-              <p className="text-slate-400 font-mono">admin@sunriseclinic.in</p>
-              <p className="text-slate-400 font-mono">admin123</p>
-            </div>
-          </div>
         </div>
         </div>
       </div>
