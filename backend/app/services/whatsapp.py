@@ -62,10 +62,11 @@ def _send_request(phone_id: str, token: str, payload: dict) -> bool:
 def send_whatsapp_template(
     to_phone: str,
     template_name: str,
-    parameters: list[str],
+    parameters: dict[str, str],
     language: str = "en",
 ) -> bool:
-    """Send a pre-approved template message (works for business-initiated conversations)."""
+    """Send a pre-approved template message (works for business-initiated conversations).
+    Parameters is a dict mapping named variables to their values."""
     creds = _get_credentials()
     if not creds:
         logger.info("[whatsapp template skipped] To=%s template=%s", to_phone, template_name)
@@ -75,7 +76,7 @@ def send_whatsapp_template(
     if parameters:
         components.append({
             "type": "body",
-            "parameters": [{"type": "text", "text": p} for p in parameters],
+            "parameters": [{"type": "text", "parameter_name": k, "text": v} for k, v in parameters.items()],
         })
     return _send_request(phone_id, token, {
         "to": _format_phone(to_phone),
@@ -105,7 +106,7 @@ def send_whatsapp_text(to_phone: str, body: str) -> bool:
 def _send_with_template_fallback(
     to_phone: str,
     template_name: str,
-    parameters: list[str],
+    parameters: dict[str, str],
     fallback_text: str,
 ) -> bool:
     """Try template first; if it fails (not approved yet), fall back to freeform text."""
@@ -138,7 +139,14 @@ def notify_booking_whatsapp(
     _send_with_template_fallback(
         patient_phone,
         "booking_confirmation",
-        [patient_name, clinic_name, service_name, f"{preferred_date} at {preferred_time}", status.upper(), tracking_url],
+        {
+            "patient_name": patient_name,
+            "clinic_name": clinic_name,
+            "service_name": service_name,
+            "date_time": f"{preferred_date} at {preferred_time}",
+            "status": status.upper(),
+            "tracking_url": tracking_url,
+        },
         fallback,
     )
 
@@ -165,7 +173,12 @@ def notify_clinic_whatsapp(
     _send_with_template_fallback(
         clinic_phone,
         "clinic_new_booking",
-        [patient_name, patient_phone, service_name, f"{preferred_date} at {preferred_time}"],
+        {
+            "patient_name": patient_name,
+            "patient_phone": patient_phone,
+            "service_name": service_name,
+            "date_time": f"{preferred_date} at {preferred_time}",
+        },
         fallback,
     )
 
@@ -189,6 +202,12 @@ def notify_status_whatsapp(
     _send_with_template_fallback(
         patient_phone,
         "appointment_status",
-        [patient_name, clinic_name, status.upper(), f"{preferred_date} at {preferred_time}", tracking_url],
+        {
+            "patient_name": patient_name,
+            "clinic_name": clinic_name,
+            "status": status.upper(),
+            "date_time": f"{preferred_date} at {preferred_time}",
+            "tracking_url": tracking_url,
+        },
         fallback,
     )
