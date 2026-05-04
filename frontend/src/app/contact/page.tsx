@@ -5,26 +5,36 @@ export default function ContactPage() {
   return (
     <MarketingPageShell
       eyebrow="Contact Us"
-      title="Talk to Tenivra"
-      subtitle="Whether you are a clinic owner, receptionist, patient, or partner, we would be happy to hear from you."
+      title="We'd Love to Hear From You"
+      subtitle="Whether you're a clinic owner, a patient, or just curious about Tenivra — reach out anytime."
     >
-      <h2>Email</h2>
+      <h2>General Inquiries</h2>
       <p>
-        For product, onboarding, support, or partnership questions, email us at{" "}
-        <a href="mailto:vemuboddupalli@gmail.com">vemuboddupalli@gmail.com</a>.
+        For questions about the product, onboarding, partnerships, or anything else, drop us an email at{" "}
+        <a href="mailto:vemuboddupalli@gmail.com">vemuboddupalli@gmail.com</a>. We typically respond within 24 hours.
       </p>
-      <h2>For Clinics</h2>
+
+      <h2>For Clinic Owners</h2>
       <p>
-        If you want to try Tenivra, you can create a clinic account and set up your public page
-        in a few minutes.
+        Interested in getting your clinic online? You can{" "}
+        <Link href="/signup">create your clinic account here</Link> — it takes less than 60 seconds and is completely free during early access.
       </p>
       <p>
-        <Link href="/signup">Create your clinic account</Link>
+        If you'd like a walkthrough or have questions before signing up, feel free to email us and we'll schedule a quick call.
       </p>
+
       <h2>For Patients</h2>
       <p>
-        For appointment changes, cancellations, medical questions, or emergency help, please
-        contact the clinic directly using the phone number shown on that clinic's public page.
+        If you need help with an appointment — rescheduling, cancellations, or medical queries — please contact your clinic directly using the phone number shown on the clinic's page.
+      </p>
+      <p>
+        For issues with your Tenivra patient account (login problems, password reset, etc.), email us and we'll help you out.
+      </p>
+
+      <h2>Report a Problem</h2>
+      <p>
+        Found a bug or something not working right? Email us at{" "}
+        <a href="mailto:vemuboddupalli@gmail.com">vemuboddupalli@gmail.com</a> with a description of what happened and we'll fix it as soon as possible.
       </p>
     </MarketingPageShell>
   );
