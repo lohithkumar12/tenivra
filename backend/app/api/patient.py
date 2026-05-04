@@ -5,6 +5,9 @@ from app.database import get_db
 from app.models import User, Appointment, AppointmentStatus, Tenant, Service, Doctor
 from app.schemas import AppointmentResponse, UserResponse
 from app.deps import require_patient
+from app.services.sse import notify_tenant
+from app.services.notifications import notify_appointment_status_change
+from app.api.realtime import make_tracking_code
 
 router = APIRouter(prefix="/api/patient", tags=["patient"])
 
@@ -35,6 +38,7 @@ def my_appointments(
         if a.tenant:
             r.clinic_name = a.tenant.name
             r.clinic_slug = a.tenant.slug
+        r.tracking_code = make_tracking_code(a.id)
         out.append(r)
     return out
 
@@ -57,6 +61,23 @@ def cancel_my_appointment(
     appt.status = AppointmentStatus.CANCELLED.value
     db.commit()
     db.refresh(appt)
+
+    if appt.tenant:
+        notify_tenant(appt.tenant_id, "patient_cancelled", {
+            "appointment_id": appt.id,
+            "patient_name": appt.patient_name,
+            "preferred_date": appt.preferred_date,
+            "preferred_time": appt.preferred_time,
+        })
+        notify_appointment_status_change(
+            patient_email=None,
+            patient_phone=appt.tenant.phone or "",
+            patient_name=appt.patient_name,
+            clinic_name=appt.tenant.name,
+            status="cancelled",
+            preferred_date=appt.preferred_date,
+            preferred_time=appt.preferred_time,
+        )
 
     r = AppointmentResponse.model_validate(appt)
     if appt.service:

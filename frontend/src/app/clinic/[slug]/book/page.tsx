@@ -73,7 +73,7 @@ function BookInner() {
     }
     setBusy(true);
     try {
-      const res = await api.post<{ id: string; status: string }>(
+      const res = await api.post<{ id: string; status: string; tracking_code?: string }>(
         `/api/public/${slug}/appointments`,
         {
           ...form,
@@ -83,9 +83,10 @@ function BookInner() {
         isPatient ? token ?? undefined : undefined,
       );
       track(Events.BookingCompleted, { slug, status: res.status, authenticated: isPatient });
+      const trackCode = res.tracking_code || "";
       const dest = isPatient
         ? "/patient/bookings"
-        : `/clinic/${slug}/book/success?status=${res.status}`;
+        : `/clinic/${slug}/book/success?status=${res.status}&track=${trackCode}`;
       router.push(dest);
     } catch (e: unknown) { setErr(e instanceof Error ? e.message : "Something went wrong"); }
     finally { setBusy(false); }

@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { homeForRole } from "@/lib/auth";
 import { Button, Card } from "@/components/ui";
 
 interface ClinicSummary {
@@ -18,6 +20,7 @@ interface ClinicSummary {
 }
 
 export default function ClinicsDirectoryPage() {
+  const { user, logout } = useAuth();
   const [clinics, setClinics] = useState<ClinicSummary[]>([]);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
@@ -45,12 +48,30 @@ export default function ClinicsDirectoryPage() {
         <nav className="relative z-10 max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="text-xl font-bold text-white">Tenivra</Link>
           <div className="flex items-center gap-2">
-            <Link href="/login">
-              <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white hover:bg-white/10">Sign In</Button>
-            </Link>
-            <Link href="/patient/signup">
-              <Button variant="gradient" size="sm">Patient Sign Up</Button>
-            </Link>
+            {user ? (
+              <>
+                <Link href={homeForRole(user.role)}>
+                  <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white hover:bg-white/10">
+                    {user.role === "patient" ? "My Bookings" : "Dashboard"}
+                  </Button>
+                </Link>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-500 to-accent-500 text-white font-bold flex items-center justify-center text-xs">
+                    {user.full_name.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-sm text-white/80 hidden sm:inline">{user.full_name}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white hover:bg-white/10">Sign In</Button>
+                </Link>
+                <Link href="/patient/signup">
+                  <Button variant="gradient" size="sm">Patient Sign Up</Button>
+                </Link>
+              </>
+            )}
           </div>
         </nav>
         <div className="relative z-10 max-w-4xl mx-auto px-6 py-16 sm:py-20 text-center">
@@ -154,15 +175,27 @@ export default function ClinicsDirectoryPage() {
 
       {/* CTA */}
       <section className="max-w-4xl mx-auto px-6 pb-16">
-        <Card className="p-8 sm:p-10 text-center bg-gradient-to-br from-brand-50 to-accent-50 border-brand-100">
-          <h3 className="text-2xl font-extrabold text-slate-800">Run a clinic? Get listed for free.</h3>
-          <p className="text-slate-600 mt-2 max-w-xl mx-auto">
-            Set up your page, accept online appointments, and reach new patients on Tenivra.
-          </p>
-          <Link href="/signup" className="inline-block mt-5">
-            <Button variant="gradient" size="lg">List Your Clinic</Button>
-          </Link>
-        </Card>
+        {user?.role === "patient" ? (
+          <Card className="p-8 sm:p-10 text-center bg-gradient-to-br from-brand-50 to-accent-50 border-brand-100">
+            <h3 className="text-2xl font-extrabold text-slate-800">Track all your appointments</h3>
+            <p className="text-slate-600 mt-2 max-w-xl mx-auto">
+              Book from any clinic above and manage all your appointments in one place.
+            </p>
+            <Link href="/patient/bookings" className="inline-block mt-5">
+              <Button variant="gradient" size="lg">Go to My Bookings</Button>
+            </Link>
+          </Card>
+        ) : (
+          <Card className="p-8 sm:p-10 text-center bg-gradient-to-br from-brand-50 to-accent-50 border-brand-100">
+            <h3 className="text-2xl font-extrabold text-slate-800">Run a clinic? Get listed for free.</h3>
+            <p className="text-slate-600 mt-2 max-w-xl mx-auto">
+              Set up your page, accept online appointments, and reach new patients on Tenivra.
+            </p>
+            <Link href="/signup" className="inline-block mt-5">
+              <Button variant="gradient" size="lg">List Your Clinic</Button>
+            </Link>
+          </Card>
+        )}
       </section>
     </div>
   );

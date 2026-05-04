@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     twilio_account_sid: Optional[str] = None
     twilio_auth_token: Optional[str] = None
     twilio_from_number: Optional[str] = None  # E.164
+    # WhatsApp Business Cloud API (Meta Graph API). If unset, messages are logged only.
+    whatsapp_token: Optional[str] = None
+    whatsapp_phone_number_id: Optional[str] = None
+    # Auto-confirm: pending bookings auto-confirm after this many minutes (0 = disabled)
+    auto_confirm_minutes: int = 15
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

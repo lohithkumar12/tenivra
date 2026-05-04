@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, usePathname } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { useAuth, homeForRole } from "@/lib/auth";
 import Link from "next/link";
-import { Spinner } from "@/components/ui";
+import { Spinner, Button } from "@/components/ui";
 
 interface Profile { name: string; slug: string; description: string; }
 
@@ -12,6 +13,8 @@ export default function ClinicLayout({ children }: { children: React.ReactNode }
   const params = useParams();
   const slug = params.slug as string;
   const path = usePathname();
+  const router = useRouter();
+  const { user, logout } = useAuth();
   const [clinic, setClinic] = useState<Profile | null>(null);
   const [err, setErr] = useState(false);
 
@@ -42,9 +45,49 @@ export default function ClinicLayout({ children }: { children: React.ReactNode }
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {/* Top bar with Tenivra branding + user account */}
+      <div className="bg-surface-900 text-white">
+        <div className="max-w-5xl mx-auto px-4 h-12 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href="/" className="text-sm font-bold text-white hover:text-brand-300 transition-colors">Tenivra</Link>
+            <span className="text-slate-600">|</span>
+            <Link href="/clinics" className="text-xs text-slate-400 hover:text-slate-200 transition-colors">Browse Clinics</Link>
+          </div>
+          <div className="flex items-center gap-3">
+            {user ? (
+              <>
+                <Link href={homeForRole(user.role)}>
+                  <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white text-xs px-2 py-1">
+                    {user.role === "patient" ? "My Bookings" : "Dashboard"}
+                  </Button>
+                </Link>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-brand-500 to-accent-500 text-white font-bold flex items-center justify-center text-[10px]">
+                    {user.full_name.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-xs text-slate-300 hidden sm:inline">{user.full_name}</span>
+                </div>
+                <button onClick={() => { logout(); router.push("/"); }} className="text-xs text-slate-500 hover:text-red-400 transition-colors">
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white text-xs px-2 py-1">Sign In</Button>
+                </Link>
+                <Link href="/patient/signup">
+                  <Button variant="ghost" size="sm" className="text-brand-400 hover:text-brand-300 text-xs px-2 py-1">Sign Up</Button>
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
       <header className="bg-gradient-to-r from-brand-700 via-brand-600 to-brand-800 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-grid-pattern opacity-10" />
-        <div className="relative z-10 max-w-5xl mx-auto px-4 pt-8 pb-2">
+        <div className="relative z-10 max-w-5xl mx-auto px-4 pt-6 pb-2">
           <div className="flex items-center gap-3 mb-1">
             <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-lg font-bold">
               {clinic.name.charAt(0)}

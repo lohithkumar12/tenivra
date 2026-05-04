@@ -1,4 +1,7 @@
 from contextlib import asynccontextmanager
+import asyncio
+import logging
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -9,6 +12,8 @@ from app.config import get_settings
 from app.database import engine, Base, SessionLocal
 from app.api import api_router
 from app.rate_limit import limiter
+
+logger = logging.getLogger(__name__)
 
 
 def _ensure_columns():
@@ -48,6 +53,25 @@ def _ensure_columns():
         add("tenants", "onboarding_completed", f"BOOLEAN DEFAULT {bool_false} NOT NULL")
 
 
+async def _auto_confirm_loop():
+    """Background task: auto-confirm stale pending appointments."""
+    from app.api.realtime import auto_confirm_pending
+    settings = get_settings()
+    window = settings.auto_confirm_minutes
+    if window <= 0:
+        return
+    while True:
+        await asyncio.sleep(60)
+        try:
+            db = SessionLocal()
+            count = auto_confirm_pending(db, window_minutes=window)
+            if count:
+                logger.info("[auto-confirm] confirmed %d appointments", count)
+            db.close()
+        except Exception as e:
+            logger.warning("[auto-confirm] error: %s", e)
+
+
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     Base.metadata.create_all(bind=engine)
@@ -66,7 +90,13 @@ async def lifespan(application: FastAPI):
         pass
     finally:
         db.close()
+
+    from app.services.sse import set_main_loop
+    set_main_loop(asyncio.get_running_loop())
+
+    task = asyncio.create_task(_auto_confirm_loop())
     yield
+    task.cancel()
 
 
 settings = get_settings()

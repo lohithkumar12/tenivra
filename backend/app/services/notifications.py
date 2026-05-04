@@ -93,8 +93,12 @@ def notify_booking_created(
     preferred_date: str,
     preferred_time: str,
     public_book_url: str,
+    tracking_url: Optional[str] = None,
 ):
     settings = get_settings()
+    track_btn = ""
+    if tracking_url:
+        track_btn = f'<p style="margin-top:12px;"><a href="{tracking_url}" style="display:inline-block;background:linear-gradient(135deg,#10b981,#059669);color:#fff;text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:700;">Track Live Status</a></p>'
     inner = f"""
       <p>Hi <strong>{patient_name}</strong>,</p>
       <p>Your appointment request at <strong>{clinic_name}</strong> is recorded.</p>
@@ -104,7 +108,8 @@ def notify_booking_created(
         <tr><td style="padding:6px 0;color:#64748b;">Status</td><td style="font-weight:600;">{status}</td></tr>
       </table>
       <p>This slot was checked against clinic hours — no double-booking at the same doctor &amp; time.</p>
-      <p style="margin-top:20px;"><a href="{public_book_url}" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:700;">View clinic page</a></p>
+      {track_btn}
+      <p style="margin-top:12px;"><a href="{public_book_url}" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:700;">View clinic page</a></p>
     """
     html = _tenivra_email_shell("Appointment request received", inner)
     subj = f"{clinic_name} — booking received ({preferred_date})"
@@ -155,11 +160,16 @@ def notify_appointment_status_change(
     status: str,
     preferred_date: str,
     preferred_time: str,
+    tracking_url: Optional[str] = None,
 ):
+    track_btn = ""
+    if tracking_url:
+        track_btn = f'<p style="margin-top:16px;"><a href="{tracking_url}" style="display:inline-block;background:linear-gradient(135deg,#10b981,#059669);color:#fff;text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:700;">Track Appointment</a></p>'
     inner = f"""
       <p>Hi <strong>{patient_name}</strong>,</p>
       <p>Your appointment at <strong>{clinic_name}</strong> is now <strong>{status.upper()}</strong>.</p>
       <p>{preferred_date} at {preferred_time}</p>
+      {track_btn}
       <p style="margin-top:16px;color:#64748b;font-size:14px;">Tenivra keeps patients and clinics in sync automatically.</p>
     """
     html = _tenivra_email_shell("Appointment updated", inner)

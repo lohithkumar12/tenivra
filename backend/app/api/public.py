@@ -11,6 +11,9 @@ from app.models import (
 from app.config import get_settings
 from app.services.booking_validate import validate_public_booking
 from app.services.notifications import notify_booking_created
+from app.services.whatsapp import notify_booking_whatsapp, notify_clinic_whatsapp
+from app.services.sse import notify_tenant, notify_patient
+from app.api.realtime import make_tracking_code
 from app.schemas import (
     TenantResponse, DoctorResponse, ServiceResponse, FAQResponse,
     ClinicTimingResponse, AppointmentRuleResponse,
@@ -149,6 +152,9 @@ def book_appointment(
 
     settings = get_settings()
     base = settings.public_app_url.rstrip("/")
+    tracking = make_tracking_code(appt.id)
+    tracking_url = f"{base}/track/{tracking}"
+
     notify_booking_created(
         patient_email=body.patient_email,
         patient_phone=body.patient_phone,
@@ -160,7 +166,44 @@ def book_appointment(
         preferred_date=body.preferred_date,
         preferred_time=body.preferred_time,
         public_book_url=f"{base}/clinic/{t.slug}",
+        tracking_url=tracking_url,
     )
+
+    notify_booking_whatsapp(
+        patient_phone=body.patient_phone,
+        patient_name=body.patient_name,
+        clinic_name=t.name,
+        service_name=svc.name,
+        preferred_date=body.preferred_date,
+        preferred_time=body.preferred_time,
+        status=initial,
+        tracking_url=tracking_url,
+    )
+    notify_clinic_whatsapp(
+        clinic_phone=t.phone,
+        patient_name=body.patient_name,
+        patient_phone=body.patient_phone,
+        service_name=svc.name,
+        preferred_date=body.preferred_date,
+        preferred_time=body.preferred_time,
+        appointment_id=appt.id,
+    )
+
+    notify_tenant(t.id, "new_booking", {
+        "appointment_id": appt.id,
+        "patient_name": body.patient_name,
+        "service_name": svc.name,
+        "doctor_name": appt.doctor.name if appt.doctor else None,
+        "preferred_date": body.preferred_date,
+        "preferred_time": body.preferred_time,
+        "status": initial,
+    })
+    if patient_user_id:
+        notify_patient(patient_user_id, "booking_created", {
+            "appointment_id": appt.id,
+            "tracking_code": tracking,
+            "status": initial,
+        })
 
     r = AppointmentResponse.model_validate(appt)
     r.service_name = svc.name
@@ -168,6 +211,7 @@ def book_appointment(
         r.doctor_name = appt.doctor.name
     r.clinic_name = t.name
     r.clinic_slug = t.slug
+    r.tracking_code = tracking
     return r
 
 

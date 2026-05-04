@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Badge, Button, Card, EmptyState, Spinner } from "@/components/ui";
+import { useSSE, playNotificationSound, showBrowserNotification, requestBrowserNotificationPermission } from "@/lib/useSSE";
 
 interface Appt {
   id: string;
@@ -18,6 +19,7 @@ interface Appt {
   status: string;
   admin_notes?: string | null;
   created_at?: string;
+  tracking_code?: string | null;
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -29,10 +31,13 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default function MyBookingsPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [appts, setAppts] = useState<Appt[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => { requestBrowserNotificationPermission(); }, []);
 
   const load = () => {
     if (!token) return;
@@ -44,6 +49,28 @@ export default function MyBookingsPage() {
   };
 
   useEffect(load, [token]);
+
+  const handleSSE = useCallback((evt: { event: string; data: Record<string, unknown> }) => {
+    if (evt.event === "status_change") {
+      const d = evt.data;
+      const status = d.status as string;
+      const clinic = (d.clinic_name || "Clinic") as string;
+      setAppts(prev => prev.map(a =>
+        a.id === d.appointment_id ? { ...a, status } : a
+      ));
+      playNotificationSound();
+      const msg = `Your appointment at ${clinic} is now ${status.toUpperCase()}`;
+      setToast(msg);
+      setTimeout(() => setToast(null), 5000);
+      showBrowserNotification("Appointment Updated", msg);
+    }
+  }, []);
+
+  useSSE(
+    user?.role === "patient" ? "/api/sse/patient" : null,
+    token,
+    handleSSE,
+  );
 
   const cancel = async (id: string) => {
     if (!token) return;
@@ -59,12 +86,26 @@ export default function MyBookingsPage() {
     }
   };
 
+  const trackingCode = (id: string) => {
+    const a = appts.find(x => x.id === id);
+    return a?.tracking_code || null;
+  };
+
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
+      {/* Live toast */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 bg-brand-600 text-white px-6 py-3 rounded-xl shadow-2xl animate-fade-in-up flex items-center gap-3">
+          <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+          <span className="text-sm font-medium">{toast}</span>
+          <button onClick={() => setToast(null)} className="ml-2 text-white/70 hover:text-white">&times;</button>
+        </div>
+      )}
+
       <div className="flex items-baseline justify-between flex-wrap gap-3 mb-8">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-800">My Bookings</h1>
-          <p className="text-slate-500 mt-1">All your appointment requests, in one place.</p>
+          <p className="text-slate-500 mt-1">All your appointment requests, in one place. Updates appear live.</p>
         </div>
         <Link href="/clinics">
           <Button variant="gradient" size="md">+ Book a New Appointment</Button>
@@ -131,16 +172,26 @@ export default function MyBookingsPage() {
                     )}
                   </div>
 
-                  {canCancel && (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => cancel(a.id)}
-                      disabled={busy === a.id}
-                    >
-                      {busy === a.id ? "Cancelling..." : "Cancel"}
-                    </Button>
-                  )}
+                  <div className="flex flex-col gap-2 items-end">
+                    {a.tracking_code && (
+                      <Link href={`/track/${a.tracking_code}`} target="_blank">
+                        <Button variant="ghost" size="sm" className="text-brand-600">
+                          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                          Track Live
+                        </Button>
+                      </Link>
+                    )}
+                    {canCancel && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => cancel(a.id)}
+                        disabled={busy === a.id}
+                      >
+                        {busy === a.id ? "Cancelling..." : "Cancel"}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </Card>
             );

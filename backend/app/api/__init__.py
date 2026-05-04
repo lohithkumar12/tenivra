@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api import auth, admin, clinic, doctors, services, faqs, appointments, public, patient
+from app.api import auth, admin, clinic, doctors, services, faqs, appointments, public, patient, realtime
 
 api_router = APIRouter()
 api_router.include_router(auth.router)
@@ -11,3 +11,4 @@ api_router.include_router(faqs.router)
 api_router.include_router(appointments.router)
 api_router.include_router(public.router)
 api_router.include_router(patient.router)
+api_router.include_router(realtime.router)

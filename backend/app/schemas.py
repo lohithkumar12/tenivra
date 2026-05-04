@@ -477,6 +477,7 @@ class AppointmentResponse(BaseModel):
     doctor_name: Optional[str] = None
     clinic_name: Optional[str] = None
     clinic_slug: Optional[str] = None
+    tracking_code: Optional[str] = None
 
 
 # ── Assistant ────────────────────────────────────────────────────────────

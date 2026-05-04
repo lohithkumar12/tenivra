@@ -6,6 +6,10 @@ from app.models import Appointment, User, AppointmentStatus, Tenant
 from app.schemas import AppointmentResponse, AppointmentStatusUpdate
 from app.deps import require_clinic_workspace
 from app.services.notifications import notify_appointment_status_change
+from app.services.whatsapp import notify_status_whatsapp
+from app.services.sse import notify_tenant, notify_patient
+from app.api.realtime import make_tracking_code
+from app.config import get_settings
 
 router = APIRouter(prefix="/api/clinic/appointments", tags=["appointments"])
 
@@ -84,6 +88,10 @@ def update_status(
 
     tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first()
     if tenant:
+        settings = get_settings()
+        tracking = make_tracking_code(appt.id)
+        tracking_url = f"{settings.public_app_url.rstrip('/')}/track/{tracking}"
+
         notify_appointment_status_change(
             patient_email=appt.patient_email,
             patient_phone=appt.patient_phone,
@@ -92,6 +100,28 @@ def update_status(
             status=body.status,
             preferred_date=appt.preferred_date,
             preferred_time=appt.preferred_time,
+            tracking_url=tracking_url,
         )
+        notify_status_whatsapp(
+            patient_phone=appt.patient_phone,
+            patient_name=appt.patient_name,
+            clinic_name=tenant.name,
+            status=body.status,
+            preferred_date=appt.preferred_date,
+            preferred_time=appt.preferred_time,
+            tracking_url=tracking_url,
+        )
+        notify_tenant(user.tenant_id, "status_change", {
+            "appointment_id": appt.id,
+            "status": body.status,
+            "patient_name": appt.patient_name,
+        })
+        if appt.patient_user_id:
+            notify_patient(appt.patient_user_id, "status_change", {
+                "appointment_id": appt.id,
+                "status": body.status,
+                "clinic_name": tenant.name,
+                "tracking_code": tracking,
+            })
 
     return _enrich(appt)
