@@ -47,37 +47,34 @@ export default function ClinicLayout({ children }: { children: React.ReactNode }
     <div className="min-h-screen bg-slate-50">
       {/* Top bar with Tenivra branding + user account */}
       <div className="bg-surface-900 text-white">
-        <div className="max-w-5xl mx-auto px-4 h-12 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="max-w-5xl mx-auto px-3 sm:px-4 h-11 sm:h-12 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Link href="/" className="text-sm font-bold text-white hover:text-brand-300 transition-colors">Tenivra</Link>
-            <span className="text-slate-600">|</span>
-            <Link href="/clinics" className="text-xs text-slate-400 hover:text-slate-200 transition-colors">Browse Clinics</Link>
+            <span className="text-slate-600 hidden sm:inline">|</span>
+            <Link href="/clinics" className="text-xs text-slate-400 hover:text-slate-200 transition-colors hidden sm:inline">Browse Clinics</Link>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             {user ? (
               <>
                 <Link href={homeForRole(user.role)}>
-                  <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white text-xs px-2 py-1">
-                    {user.role === "patient" ? "My Bookings" : "Dashboard"}
+                  <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white text-[11px] sm:text-xs px-1.5 sm:px-2 py-1">
+                    {user.role === "patient" ? "Bookings" : "Dashboard"}
                   </Button>
                 </Link>
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-brand-500 to-accent-500 text-white font-bold flex items-center justify-center text-[10px]">
-                    {user.full_name.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="text-xs text-slate-300 hidden sm:inline">{user.full_name}</span>
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-brand-500 to-accent-500 text-white font-bold flex items-center justify-center text-[10px]">
+                  {user.full_name.charAt(0).toUpperCase()}
                 </div>
-                <button onClick={() => { logout(); router.push("/"); }} className="text-xs text-slate-500 hover:text-red-400 transition-colors">
+                <button onClick={() => { logout(); router.push("/"); }} className="text-[11px] sm:text-xs text-slate-500 hover:text-red-400 transition-colors">
                   Logout
                 </button>
               </>
             ) : (
               <>
                 <Link href="/login">
-                  <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white text-xs px-2 py-1">Sign In</Button>
+                  <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white text-[11px] sm:text-xs px-1.5 sm:px-2 py-1">Sign In</Button>
                 </Link>
                 <Link href="/patient/signup">
-                  <Button variant="ghost" size="sm" className="text-brand-400 hover:text-brand-300 text-xs px-2 py-1">Sign Up</Button>
+                  <Button variant="ghost" size="sm" className="text-brand-400 hover:text-brand-300 text-[11px] sm:text-xs px-1.5 sm:px-2 py-1">Sign Up</Button>
                 </Link>
               </>
             )}
@@ -87,28 +84,28 @@ export default function ClinicLayout({ children }: { children: React.ReactNode }
 
       <header className="bg-gradient-to-r from-brand-700 via-brand-600 to-brand-800 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-grid-pattern opacity-10" />
-        <div className="relative z-10 max-w-5xl mx-auto px-4 pt-6 pb-2">
+        <div className="relative z-10 max-w-5xl mx-auto px-3 sm:px-4 pt-4 sm:pt-6 pb-2">
           <div className="flex items-center gap-3 mb-1">
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-lg font-bold">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/20 flex items-center justify-center text-base sm:text-lg font-bold shrink-0">
               {clinic.name.charAt(0)}
             </div>
-            <div>
-              <h1 className="text-2xl font-bold">{clinic.name}</h1>
-              {clinic.description && <p className="text-brand-100 text-sm mt-0.5 line-clamp-1 max-w-xl">{clinic.description}</p>}
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold truncate">{clinic.name}</h1>
+              {clinic.description && <p className="text-brand-100 text-xs sm:text-sm mt-0.5 line-clamp-1 max-w-xl">{clinic.description}</p>}
             </div>
           </div>
         </div>
-        <nav className="relative z-10 max-w-5xl mx-auto px-4 flex gap-1 overflow-x-auto pb-0 mt-4">
+        <nav className="relative z-10 max-w-5xl mx-auto px-2 sm:px-4 flex gap-0.5 sm:gap-1 overflow-x-auto pb-0 mt-3 sm:mt-4 scrollbar-hide">
           {tabs.map(t => {
             const active = path === t.href;
             return (
               <Link key={t.href} href={t.href}
-                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-t-xl text-sm whitespace-nowrap transition-all duration-200 ${
+                className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-t-xl text-xs sm:text-sm whitespace-nowrap transition-all duration-200 ${
                   active
                     ? "bg-slate-50 text-brand-700 font-semibold shadow-sm"
                     : "text-white/70 hover:text-white hover:bg-white/10"
                 }`}>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2 : 1.5}>
+                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2 : 1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d={t.icon} />
                 </svg>
                 {t.label}
@@ -117,7 +114,7 @@ export default function ClinicLayout({ children }: { children: React.ReactNode }
           })}
         </nav>
       </header>
-      <main className="max-w-5xl mx-auto px-4 py-8">{children}</main>
+      <main className="max-w-5xl mx-auto px-3 sm:px-4 py-5 sm:py-8">{children}</main>
       <footer className="text-center py-8 text-xs text-slate-400">
         Powered by <Link href="/" className="text-brand-600 hover:underline font-medium">Tenivra</Link>
       </footer>

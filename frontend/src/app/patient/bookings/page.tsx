@@ -92,23 +92,23 @@ export default function MyBookingsPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
       {/* Live toast */}
       {toast && (
-        <div className="fixed top-4 right-4 z-50 bg-brand-600 text-white px-6 py-3 rounded-xl shadow-2xl animate-fade-in-up flex items-center gap-3">
+        <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-sm z-50 bg-brand-600 text-white px-4 sm:px-6 py-3 rounded-xl shadow-2xl animate-fade-in-up flex items-center gap-3">
           <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-          <span className="text-sm font-medium">{toast}</span>
+          <span className="text-sm font-medium flex-1">{toast}</span>
           <button onClick={() => setToast(null)} className="ml-2 text-white/70 hover:text-white">&times;</button>
         </div>
       )}
 
-      <div className="flex items-baseline justify-between flex-wrap gap-3 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-800">My Bookings</h1>
-          <p className="text-slate-500 mt-1">All your appointment requests, in one place. Updates appear live.</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800">My Bookings</h1>
+          <p className="text-slate-500 mt-1 text-sm sm:text-base">All your appointment requests, in one place. Updates appear live.</p>
         </div>
         <Link href="/clinics">
-          <Button variant="gradient" size="md">+ Book a New Appointment</Button>
+          <Button variant="gradient" size="md" className="w-full sm:w-auto">+ Book a New Appointment</Button>
         </Link>
       </div>
 
@@ -128,70 +128,69 @@ export default function MyBookingsPage() {
           {appts.map(a => {
             const canCancel = a.status === "pending" || a.status === "confirmed";
             return (
-              <Card key={a.id} variant="hover" className="p-5 sm:p-6">
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <h3 className="font-bold text-slate-800 text-lg">{a.service_name || "Appointment"}</h3>
-                      <Badge className={STATUS_STYLES[a.status] || "bg-slate-100 text-slate-700"}>
-                        {a.status}
-                      </Badge>
-                    </div>
-                    {a.clinic_name && (
-                      <p className="text-sm text-slate-500 mt-1">
-                        at{" "}
-                        {a.clinic_slug ? (
-                          <Link href={`/clinic/${a.clinic_slug}`} className="text-brand-600 font-semibold hover:underline">
-                            {a.clinic_name}
-                          </Link>
-                        ) : (
-                          <span className="font-semibold">{a.clinic_name}</span>
-                        )}
-                      </p>
-                    )}
-                    {a.doctor_name && (
-                      <p className="text-sm text-slate-500 mt-0.5">with {a.doctor_name}</p>
-                    )}
+              <Card key={a.id} variant="hover" className="p-4 sm:p-6">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                    <h3 className="font-bold text-slate-800 text-base sm:text-lg">{a.service_name || "Appointment"}</h3>
+                    <Badge className={STATUS_STYLES[a.status] || "bg-slate-100 text-slate-700"}>
+                      {a.status}
+                    </Badge>
+                  </div>
+                  {a.clinic_name && (
+                    <p className="text-sm text-slate-500 mt-1">
+                      at{" "}
+                      {a.clinic_slug ? (
+                        <Link href={`/clinic/${a.clinic_slug}`} className="text-brand-600 font-semibold hover:underline">
+                          {a.clinic_name}
+                        </Link>
+                      ) : (
+                        <span className="font-semibold">{a.clinic_name}</span>
+                      )}
+                    </p>
+                  )}
+                  {a.doctor_name && (
+                    <p className="text-sm text-slate-500 mt-0.5">with {a.doctor_name}</p>
+                  )}
 
-                    <div className="flex items-center gap-5 mt-3 text-sm text-slate-600 flex-wrap">
-                      <span className="flex items-center gap-1.5">
-                        <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                        {a.preferred_date}
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        {a.preferred_time}
-                      </span>
-                    </div>
-
-                    {a.notes && <p className="text-sm text-slate-500 mt-3 italic">&ldquo;{a.notes}&rdquo;</p>}
-                    {a.admin_notes && (
-                      <p className="text-sm text-slate-700 mt-3 px-3 py-2 bg-slate-50 rounded-lg">
-                        <span className="font-semibold">Clinic note:</span> {a.admin_notes}
-                      </p>
-                    )}
+                  <div className="flex items-center gap-4 sm:gap-5 mt-3 text-sm text-slate-600 flex-wrap">
+                    <span className="flex items-center gap-1.5">
+                      <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                      {a.preferred_date}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      {a.preferred_time}
+                    </span>
                   </div>
 
-                  <div className="flex flex-col gap-2 items-end">
-                    {a.tracking_code && (
-                      <Link href={`/track/${a.tracking_code}`} target="_blank">
-                        <Button variant="ghost" size="sm" className="text-brand-600">
-                          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                          Track Live
-                        </Button>
-                      </Link>
-                    )}
-                    {canCancel && (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => cancel(a.id)}
-                        disabled={busy === a.id}
-                      >
-                        {busy === a.id ? "Cancelling..." : "Cancel"}
+                  {a.notes && <p className="text-sm text-slate-500 mt-3 italic">&ldquo;{a.notes}&rdquo;</p>}
+                  {a.admin_notes && (
+                    <p className="text-sm text-slate-700 mt-3 px-3 py-2 bg-slate-50 rounded-lg">
+                      <span className="font-semibold">Clinic note:</span> {a.admin_notes}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex gap-2 mt-4 pt-3 border-t border-slate-100">
+                  {a.tracking_code && (
+                    <Link href={`/track/${a.tracking_code}`} target="_blank" className="flex-1 sm:flex-none">
+                      <Button variant="ghost" size="sm" className="text-brand-600 w-full sm:w-auto">
+                        <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                        Track Live
                       </Button>
-                    )}
-                  </div>
+                    </Link>
+                  )}
+                  {canCancel && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => cancel(a.id)}
+                      disabled={busy === a.id}
+                      className="flex-1 sm:flex-none"
+                    >
+                      {busy === a.id ? "Cancelling..." : "Cancel"}
+                    </Button>
+                  )}
                 </div>
               </Card>
             );

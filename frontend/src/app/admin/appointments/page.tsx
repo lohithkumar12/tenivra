@@ -95,55 +95,84 @@ export default function ApptsPage() {
         <p className="text-sm text-slate-500 mt-1">{list.length} appointment{list.length !== 1 ? "s" : ""} found — updates appear in real time</p>
       </div>
 
-      <Card className="p-4 mb-6">
-        <div className="flex items-end gap-4 flex-wrap">
+      <Card className="p-3 sm:p-4 mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-4">
           <Select label="Status" options={ALL_STATUS.map(s => ({ value: s, label: s || "All" }))} value={statusFilter} onChange={e => setSF(e.target.value)} />
           <Input label="Search" placeholder="Name or phone..." value={search} onChange={e => setSearch(e.target.value)} />
-          <Button onClick={filter} variant="secondary">Filter</Button>
+          <Button onClick={filter} variant="secondary" className="w-full sm:w-auto">Filter</Button>
         </div>
       </Card>
 
       {list.length === 0 ? <EmptyState message="No appointments found." /> : (
-        <Card className="overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs uppercase tracking-wider text-slate-400 bg-slate-50">
-                  <th className="px-6 py-3 font-semibold">Patient</th>
-                  <th className="px-6 py-3 font-semibold">Service</th>
-                  <th className="px-6 py-3 font-semibold">Doctor</th>
-                  <th className="px-6 py-3 font-semibold">Date / Time</th>
-                  <th className="px-6 py-3 font-semibold">Status</th>
-                  <th className="px-6 py-3 font-semibold text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {list.map(a => (
-                  <tr key={a.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="px-6 py-4">
-                      <p className="font-semibold">{a.patient_name}</p>
-                      <p className="text-xs text-slate-400">{a.patient_phone}</p>
-                    </td>
-                    <td className="px-6 py-4 text-slate-600">{a.service_name}</td>
-                    <td className="px-6 py-4 text-slate-600">{a.doctor_name || "—"}</td>
-                    <td className="px-6 py-4 text-slate-600 whitespace-nowrap">{a.preferred_date} {a.preferred_time}</td>
-                    <td className="px-6 py-4">
-                      <Badge className={statusColor(a.status)}>{a.status}</Badge>
-                      {a.status === "pending" && a.created_at && (
-                        <div className="mt-1">
-                          <AutoConfirmCountdown createdAt={a.created_at} />
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <Button variant="ghost" size="sm" onClick={() => { setSel(a); setNewSt(a.status); setNotes(a.admin_notes || ""); }}>Manage</Button>
-                    </td>
+        <>
+          {/* Desktop table */}
+          <Card className="overflow-hidden hidden lg:block">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs uppercase tracking-wider text-slate-400 bg-slate-50">
+                    <th className="px-6 py-3 font-semibold">Patient</th>
+                    <th className="px-6 py-3 font-semibold">Service</th>
+                    <th className="px-6 py-3 font-semibold">Doctor</th>
+                    <th className="px-6 py-3 font-semibold">Date / Time</th>
+                    <th className="px-6 py-3 font-semibold">Status</th>
+                    <th className="px-6 py-3 font-semibold text-right">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {list.map(a => (
+                    <tr key={a.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="px-6 py-4">
+                        <p className="font-semibold">{a.patient_name}</p>
+                        <p className="text-xs text-slate-400">{a.patient_phone}</p>
+                      </td>
+                      <td className="px-6 py-4 text-slate-600">{a.service_name}</td>
+                      <td className="px-6 py-4 text-slate-600">{a.doctor_name || "—"}</td>
+                      <td className="px-6 py-4 text-slate-600 whitespace-nowrap">{a.preferred_date} {a.preferred_time}</td>
+                      <td className="px-6 py-4">
+                        <Badge className={statusColor(a.status)}>{a.status}</Badge>
+                        {a.status === "pending" && a.created_at && (
+                          <div className="mt-1">
+                            <AutoConfirmCountdown createdAt={a.created_at} />
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <Button variant="ghost" size="sm" onClick={() => { setSel(a); setNewSt(a.status); setNotes(a.admin_notes || ""); }}>Manage</Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+
+          {/* Mobile cards */}
+          <div className="lg:hidden space-y-3">
+            {list.map(a => (
+              <Card key={a.id} variant="hover" className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-bold text-slate-800">{a.patient_name}</p>
+                  <Badge className={statusColor(a.status)}>{a.status}</Badge>
+                </div>
+                <p className="text-xs text-slate-400 mb-2">{a.patient_phone}</p>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600 mb-2">
+                  <span>{a.service_name}</span>
+                  {a.doctor_name && <span>with {a.doctor_name}</span>}
+                </div>
+                <p className="text-sm text-slate-600 mb-3">{a.preferred_date} at {a.preferred_time}</p>
+                {a.status === "pending" && a.created_at && (
+                  <div className="mb-3">
+                    <AutoConfirmCountdown createdAt={a.created_at} />
+                  </div>
+                )}
+                <Button variant="gradient" size="sm" className="w-full" onClick={() => { setSel(a); setNewSt(a.status); setNotes(a.admin_notes || ""); }}>
+                  Manage
+                </Button>
+              </Card>
+            ))}
           </div>
-        </Card>
+        </>
       )}
 
       <Modal open={!!sel} onClose={() => setSel(null)} title="Manage Appointment">

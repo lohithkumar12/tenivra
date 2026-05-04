@@ -45,18 +45,18 @@ export default function ClinicsDirectoryPage() {
       <section className="relative bg-surface-900 overflow-hidden">
         <div className="absolute inset-0 bg-hero-gradient opacity-80" />
         <div className="absolute inset-0 bg-grid-pattern" />
-        <nav className="relative z-10 max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="text-xl font-bold text-white">Tenivra</Link>
-          <div className="flex items-center gap-2">
+        <nav className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+          <Link href="/" className="text-lg sm:text-xl font-bold text-white">Tenivra</Link>
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {user ? (
               <>
                 <Link href={homeForRole(user.role)}>
-                  <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white hover:bg-white/10">
+                  <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white hover:bg-white/10 text-xs sm:text-sm px-2 sm:px-3">
                     {user.role === "patient" ? "My Bookings" : "Dashboard"}
                   </Button>
                 </Link>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-500 to-accent-500 text-white font-bold flex items-center justify-center text-xs">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-brand-500 to-accent-500 text-white font-bold flex items-center justify-center text-xs">
                     {user.full_name.charAt(0).toUpperCase()}
                   </div>
                   <span className="text-sm text-white/80 hidden sm:inline">{user.full_name}</span>
@@ -65,36 +65,36 @@ export default function ClinicsDirectoryPage() {
             ) : (
               <>
                 <Link href="/login">
-                  <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white hover:bg-white/10">Sign In</Button>
+                  <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white hover:bg-white/10 text-xs sm:text-sm">Sign In</Button>
                 </Link>
                 <Link href="/patient/signup">
-                  <Button variant="gradient" size="sm">Patient Sign Up</Button>
+                  <Button variant="gradient" size="sm" className="text-xs sm:text-sm">Sign Up</Button>
                 </Link>
               </>
             )}
           </div>
         </nav>
-        <div className="relative z-10 max-w-4xl mx-auto px-6 py-16 sm:py-20 text-center">
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight">
+        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-20 text-center">
+          <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
             Find a clinic. Book in seconds.
           </h1>
-          <p className="mt-4 text-lg text-slate-300 max-w-2xl mx-auto">
+          <p className="mt-3 sm:mt-4 text-base sm:text-lg text-slate-300 max-w-2xl mx-auto">
             Browse verified clinics on Tenivra and book your next visit online.
           </p>
-          <div className="mt-8 max-w-xl mx-auto">
+          <div className="mt-6 sm:mt-8 max-w-xl mx-auto">
             <input
               type="text"
               value={q}
               onChange={e => setQ(e.target.value)}
               placeholder="Search by name, location, or specialty..."
-              className="w-full px-5 py-4 rounded-2xl bg-white/95 backdrop-blur text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-brand-500/50 shadow-xl text-base"
+              className="w-full px-4 sm:px-5 py-3 sm:py-4 rounded-2xl bg-white/95 backdrop-blur text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-brand-500/50 shadow-xl text-sm sm:text-base"
             />
           </div>
         </div>
       </section>
 
       {/* Listing */}
-      <section className="max-w-7xl mx-auto px-6 py-12">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="flex items-baseline justify-between mb-6">
           <h2 className="text-2xl font-bold text-slate-800">
             {loading ? "Loading..." : `${clinics.length} clinic${clinics.length === 1 ? "" : "s"}`}
@@ -174,7 +174,7 @@ export default function ClinicsDirectoryPage() {
       </section>
 
       {/* CTA */}
-      <section className="max-w-4xl mx-auto px-6 pb-16">
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 pb-12 sm:pb-16">
         {user?.role === "patient" ? (
           <Card className="p-8 sm:p-10 text-center bg-gradient-to-br from-brand-50 to-accent-50 border-brand-100">
             <h3 className="text-2xl font-extrabold text-slate-800">Track all your appointments</h3>

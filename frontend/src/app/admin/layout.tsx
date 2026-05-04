@@ -36,6 +36,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const path = usePathname();
   const [alerts, setAlerts] = useState<PendingAlert[]>([]);
   const [tabFlash, setTabFlash] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     requestBrowserNotificationPermission();
@@ -108,6 +109,54 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     return null;
   }
 
+  const sidebarContent = (
+    <>
+      <div className="p-5">
+        <Link href="/" className="text-lg font-bold text-white">Tenivra</Link>
+        <p className="text-xs text-slate-400 mt-0.5">Clinic Admin</p>
+      </div>
+      <nav className="flex-1 px-3 space-y-0.5">
+        {NAV.map(n => {
+          const active = path === n.href;
+          return (
+            <Link
+              key={n.href}
+              href={n.href}
+              onClick={() => setSidebarOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
+                active
+                  ? "bg-brand-600/20 text-brand-300 font-semibold border-l-2 border-brand-400"
+                  : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+              }`}
+            >
+              <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2 : 1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d={n.icon} />
+              </svg>
+              {n.label}
+            </Link>
+          );
+        })}
+      </nav>
+      <div className="p-4 border-t border-white/10">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-9 h-9 rounded-xl bg-brand-600/30 flex items-center justify-center text-brand-300 text-sm font-bold">
+            {user.full_name?.charAt(0) || "A"}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm text-white font-medium truncate">{user.full_name}</p>
+            <p className="text-xs text-slate-500 truncate">{user.email}</p>
+          </div>
+        </div>
+        <button
+          onClick={() => { logout(); router.push("/login"); }}
+          className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-xl transition-colors"
+        >
+          Sign out
+        </button>
+      </div>
+    </>
+  );
+
   return (
     <div className="flex min-h-screen">
       {/* Swiggy-style full-screen alert overlay */}
@@ -147,54 +196,40 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </div>
       )}
 
-      <aside className="w-60 bg-surface-900 flex flex-col shrink-0">
-        <div className="p-5">
-          <Link href="/" className="text-lg font-bold text-white">Tenivra</Link>
-          <p className="text-xs text-slate-400 mt-0.5">Clinic Admin</p>
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
+          <aside className="fixed inset-y-0 left-0 w-64 bg-surface-900 flex flex-col z-50 shadow-2xl">
+            {sidebarContent}
+          </aside>
         </div>
-        <nav className="flex-1 px-3 space-y-0.5">
-          {NAV.map(n => {
-            const active = path === n.href;
-            return (
-              <Link
-                key={n.href}
-                href={n.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
-                  active
-                    ? "bg-brand-600/20 text-brand-300 font-semibold border-l-2 border-brand-400"
-                    : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
-                }`}
-              >
-                <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2 : 1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d={n.icon} />
-                </svg>
-                {n.label}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="p-4 border-t border-white/10">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-xl bg-brand-600/30 flex items-center justify-center text-brand-300 text-sm font-bold">
-              {user.full_name?.charAt(0) || "A"}
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm text-white font-medium truncate">{user.full_name}</p>
-              <p className="text-xs text-slate-500 truncate">{user.email}</p>
-            </div>
-          </div>
-          <button
-            onClick={() => { logout(); router.push("/login"); }}
-            className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-xl transition-colors"
-          >
-            Sign out
-          </button>
-        </div>
+      )}
+
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:flex w-60 bg-surface-900 flex-col shrink-0">
+        {sidebarContent}
       </aside>
-      <main className="flex-1 p-8 overflow-y-auto bg-slate-50">
-        <OnboardingBanner />
-        {children}
-      </main>
+
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Mobile top bar */}
+        <div className="lg:hidden bg-surface-900 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-40">
+          <button onClick={() => setSidebarOpen(true)} className="p-1.5 rounded-lg hover:bg-white/10">
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <Link href="/" className="text-base font-bold">Tenivra</Link>
+          <div className="w-8 h-8 rounded-full bg-brand-600/30 flex items-center justify-center text-brand-300 text-xs font-bold">
+            {user.full_name?.charAt(0) || "A"}
+          </div>
+        </div>
+
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto bg-slate-50">
+          <OnboardingBanner />
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
