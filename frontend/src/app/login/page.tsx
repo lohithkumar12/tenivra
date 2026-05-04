@@ -31,14 +31,22 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col bg-surface-900 relative overflow-hidden">
       <nav className="fixed top-0 left-0 right-0 z-50 bg-surface-900/80 backdrop-blur-xl border-b border-white/5">
-        <div className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 max-w-7xl mx-auto">
           <Link href="/" className="text-xl font-bold text-white hover:text-white/90 transition-colors">
             Tenivra
           </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/clinics">
+              <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white hover:bg-white/10 hidden sm:inline-flex">Find a Clinic</Button>
+            </Link>
+            <Link href="/signup">
+              <Button variant="gradient" size="sm">List Your Clinic</Button>
+            </Link>
+          </div>
         </div>
       </nav>
 
-      <div className="flex-1 flex items-center justify-center relative overflow-hidden pt-20">
+      <div className="flex-1 flex items-center justify-center relative overflow-hidden pt-20 pb-8">
         <div className="absolute inset-0 bg-hero-gradient opacity-60" />
         <div className="absolute inset-0 bg-grid-pattern" />
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-500/20 rounded-full blur-3xl animate-float" />
@@ -47,7 +55,13 @@ export default function LoginPage() {
         <div className="relative z-10 w-full max-w-md mx-4 animate-fade-in-up">
         <div className="glass-light rounded-3xl p-8 sm:p-10">
           <div className="text-center mb-8">
-            <p className="text-slate-500">Sign in to your clinic dashboard</p>
+            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-brand-500 to-accent-500 flex items-center justify-center shadow-lg">
+              <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-extrabold text-slate-800">Welcome Back</h1>
+            <p className="text-slate-500 mt-1 text-sm">Sign in to manage your clinic or view your bookings</p>
           </div>
 
           <form onSubmit={handle} className="space-y-5">
