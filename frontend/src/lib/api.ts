@@ -2,7 +2,8 @@ interface FetchOpts extends RequestInit {
   token?: string;
 }
 
-const REQUEST_TIMEOUT_MS = 15000;
+/** Render free tier can cold-start 30–60s; 15s caused false "Request timed out" on signup. */
+const REQUEST_TIMEOUT_MS = 60000;
 
 async function request<T>(path: string, opts: FetchOpts = {}): Promise<T> {
   const { token, headers: extra, ...rest } = opts;
